@@ -8,33 +8,57 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* BluPear Cybersecurity Theme - Deep Blue Professional */
+    --background: 220 30% 8%;
+    --foreground: 210 40% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 220 25% 10%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 220 25% 10%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Electric Blue Primary */
+    --primary: 200 100% 50%;
+    --primary-foreground: 220 30% 8%;
+    --primary-glow: 200 100% 60%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Subtle Secondary */
+    --secondary: 220 20% 15%;
+    --secondary-foreground: 210 30% 85%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 15% 20%;
+    --muted-foreground: 210 20% 65%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 200 80% 45%;
+    --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 84.2% 60.2%;
+    /* Security Alert Colors */
+    --destructive: 0 85% 60%;
     --destructive-foreground: 210 40% 98%;
+    --warning: 45 100% 60%;
+    --warning-foreground: 220 30% 8%;
+    --success: 140 80% 50%;
+    --success-foreground: 220 30% 8%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 220 20% 18%;
+    --input: 220 20% 15%;
+    --ring: 200 100% 50%;
+
+    /* Security Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(200 100% 50%), hsl(200 100% 60%));
+    --gradient-security: linear-gradient(135deg, hsl(220 30% 8%), hsl(220 25% 12%));
+    --gradient-alert: linear-gradient(135deg, hsl(0 85% 60%), hsl(15 90% 65%));
+    --gradient-success: linear-gradient(135deg, hsl(140 80% 50%), hsl(150 85% 55%));
+
+    /* Shadows & Effects */
+    --shadow-cyber: 0 10px 30px -5px hsl(200 100% 50% / 0.3);
+    --shadow-glow: 0 0 40px hsl(200 100% 50% / 0.4);
+    --shadow-card: 0 8px 25px -8px hsl(220 30% 8% / 0.6);
+
+    /* Animations */
+    --transition-cyber: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --pulse-cyber: 0 0 20px hsl(200 100% 50% / 0.5);
 
     --radius: 0.5rem;
 
@@ -56,33 +80,34 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    /* Light mode variant (keeping same dark theme as default) */
+    --background: 220 30% 8%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 220 25% 10%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 220 25% 10%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 200 100% 50%;
+    --primary-foreground: 220 30% 8%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 20% 15%;
+    --secondary-foreground: 210 30% 85%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 220 15% 20%;
+    --muted-foreground: 210 20% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 200 80% 45%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 85% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 220 20% 18%;
+    --input: 220 20% 15%;
+    --ring: 200 100% 50%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
