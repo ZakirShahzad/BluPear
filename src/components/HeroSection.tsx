@@ -10,14 +10,9 @@ import {
   CheckCircle2,
   ArrowRight
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export const HeroSection = () => {
-  const scrollToScanner = () => {
-    const scannerElement = document.getElementById('scanner-section');
-    if (scannerElement) {
-      scannerElement.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
 
   return (
     <div className="relative overflow-hidden">
@@ -76,14 +71,16 @@ export const HeroSection = () => {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
-              onClick={scrollToScanner}
+              asChild
               variant="cyber" 
               size="lg"
               className="text-lg px-8 py-6"
             >
-              <Github className="h-5 w-5 mr-2" />
-              Scan Repository
-              <ArrowRight className="h-5 w-5 ml-2" />
+              <Link to="/scanner">
+                <Github className="h-5 w-5 mr-2" />
+                Scan Repository
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </Link>
             </Button>
             <Button 
               variant="outline" 
