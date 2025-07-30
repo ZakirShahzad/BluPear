@@ -38,13 +38,6 @@ export const HeroSection = () => {
       {/* Content */}
       <div className="relative min-h-screen flex items-center justify-center px-4">
         <div className="max-w-4xl mx-auto text-center space-y-8">
-          {/* Badge */}
-          <div className="flex justify-center">
-            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10 px-4 py-2">
-              <Shield className="h-4 w-4 mr-2" />
-              Advanced Security Scanning
-            </Badge>
-          </div>
 
           {/* Main Heading */}
           <div className="space-y-4">
