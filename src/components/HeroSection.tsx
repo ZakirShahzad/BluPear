@@ -36,7 +36,7 @@ export const HeroSection = () => {
     securityPatterns: {
       title: "Insecure Code Patterns",
       description: "Advanced static analysis detects common security anti-patterns like SQL injection vectors, XSS vulnerabilities, and insecure cryptographic implementations.",
-      example: "SELECT * FROM users WHERE id = '" + userInput + "'",
+      example: "SELECT * FROM users WHERE id = '" + "[userInput]" + "'",
       recommendation: "Use parameterized queries, input validation, and established security libraries.",
       severity: "critical" as const,
       learnMoreUrl: "https://owasp.org/www-project-top-ten/"
