@@ -20,11 +20,11 @@ const Satellite = ({ position, speed }: { position: [number, number, number], sp
     <mesh ref={meshRef}>
       <boxGeometry args={[0.04, 0.04, 0.08]} />
       <meshStandardMaterial 
-        color="#00aaff" 
-        emissive="#00aaff" 
-        emissiveIntensity={0.6}
-        metalness={0.8}
-        roughness={0.2}
+        color="#60a5fa" 
+        emissive="#3b82f6" 
+        emissiveIntensity={0.4}
+        metalness={0.6}
+        roughness={0.3}
       />
     </mesh>
   );
@@ -58,7 +58,7 @@ const DataStream = ({ radius }: { radius: number }) => {
         <mesh key={index} position={[point.x, point.y, point.z]}>
           <sphereGeometry args={[0.015, 6, 6]} />
           <meshBasicMaterial 
-            color="#00ff88" 
+            color="#93c5fd" 
             transparent 
             opacity={0.7} 
           />
@@ -83,18 +83,18 @@ const PlanetRings = () => {
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[1.8, 2.2, 64]} />
         <meshBasicMaterial 
-          color="#00aaff" 
+          color="#ffffff" 
           transparent 
-          opacity={0.4}
+          opacity={0.6}
           side={THREE.DoubleSide}
         />
       </mesh>
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[2.4, 2.6, 64]} />
         <meshBasicMaterial 
-          color="#0088cc" 
+          color="#f8fafc" 
           transparent 
-          opacity={0.2}
+          opacity={0.3}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -157,9 +157,9 @@ const SecurityPlanet = () => {
       <mesh ref={atmosphereRef}>
         <sphereGeometry args={[1.15, 32, 32]} />
         <meshBasicMaterial 
-          color="#4488ff" 
+          color="#3b82f6" 
           transparent 
-          opacity={0.1} 
+          opacity={0.15} 
           side={THREE.BackSide}
         />
       </mesh>
@@ -167,11 +167,11 @@ const SecurityPlanet = () => {
       {/* Main planet surface */}
       <mesh ref={surfaceRef} geometry={surfaceGeometry}>
         <meshStandardMaterial 
-          color="#2255aa" 
-          emissive="#001122" 
-          emissiveIntensity={0.2}
-          metalness={0.3}
-          roughness={0.8}
+          color="#1e40af" 
+          emissive="#1e3a8a" 
+          emissiveIntensity={0.3}
+          metalness={0.4}
+          roughness={0.6}
         />
       </mesh>
       
@@ -179,11 +179,11 @@ const SecurityPlanet = () => {
       <mesh>
         <sphereGeometry args={[1.002, 32, 32]} />
         <meshStandardMaterial 
-          color="#00aa44" 
-          emissive="#002211" 
-          emissiveIntensity={0.3}
+          color="#2563eb" 
+          emissive="#1d4ed8" 
+          emissiveIntensity={0.2}
           transparent
-          opacity={0.8}
+          opacity={0.7}
         />
       </mesh>
       
@@ -191,9 +191,9 @@ const SecurityPlanet = () => {
       <mesh>
         <sphereGeometry args={[1.005, 16, 16]} />
         <meshBasicMaterial 
-          color="#00ff88" 
+          color="#60a5fa" 
           transparent 
-          opacity={0.2}
+          opacity={0.3}
           wireframe={true}
         />
       </mesh>
@@ -202,11 +202,11 @@ const SecurityPlanet = () => {
       <mesh ref={coreRef}>
         <sphereGeometry args={[0.3, 16, 16]} />
         <meshStandardMaterial 
-          color="#ffaa00" 
-          emissive="#ff8800" 
-          emissiveIntensity={0.8}
+          color="#3b82f6" 
+          emissive="#2563eb" 
+          emissiveIntensity={0.9}
           transparent
-          opacity={0.6}
+          opacity={0.8}
         />
       </mesh>
       
@@ -222,9 +222,9 @@ const SecurityPlanet = () => {
           <mesh key={i} position={[x, y, z]}>
             <sphereGeometry args={[0.03, 8, 8]} />
             <meshStandardMaterial 
-              color="#00ff88" 
-              emissive="#00ff88" 
-              emissiveIntensity={0.8}
+              color="#60a5fa" 
+              emissive="#3b82f6" 
+              emissiveIntensity={0.7}
             />
           </mesh>
         );
@@ -243,7 +243,7 @@ export const SecurityShield3D = () => {
   }, []);
 
   return (
-    <div className="w-full h-64 relative">
+    <div className="w-full h-48 relative">
       <Canvas camera={{ position: [0, 0, 4], fov: 60 }}>
         <ambientLight intensity={0.3} />
         <pointLight position={[5, 5, 5]} intensity={1.5} color="#4488ff" />
