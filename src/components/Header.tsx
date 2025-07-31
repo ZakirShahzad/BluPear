@@ -1,11 +1,13 @@
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
-import { Shield, Github, FileText } from "lucide-react";
+import { Shield, Github, FileText, LogOut } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Header = () => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
   
   const isActive = (path: string) => location.pathname === path;
   
@@ -98,9 +100,21 @@ export const Header = () => {
             <FileText className="h-4 w-4 mr-2" />
             Docs
           </Button>
-          <Button variant="cyber" size="sm">
-            Sign In
-          </Button>
+          {user ? (
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-muted-foreground">
+                {user.email}
+              </span>
+              <Button variant="outline" size="sm" onClick={signOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
+          ) : (
+            <Button variant="cyber" size="sm" asChild>
+              <Link to="/auth">Sign In</Link>
+            </Button>
+          )}
         </div>
       </div>
     </header>
