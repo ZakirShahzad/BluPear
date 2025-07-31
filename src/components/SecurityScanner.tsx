@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { 
   Shield, 
   GitBranch, 
@@ -17,6 +17,10 @@ import {
   Bug
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { InteractiveSecurityChart } from "./InteractiveSecurityChart";
+import { CodeDiffViewer } from "./CodeDiffViewer";
+import { EnhancedScanProgress } from "./EnhancedScanProgress";
+import { EnhancedTooltip } from "./EnhancedTooltip";
 
 interface ScanResult {
   id: string;
@@ -37,12 +41,25 @@ interface SecurityScore {
   patterns: number;
 }
 
+interface CodeDiff {
+  id: string;
+  title: string;
+  description: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  file: string;
+  before: string;
+  after: string;
+  language: string;
+  suggestion: string;
+}
+
 export const SecurityScanner = () => {
   const [repoUrl, setRepoUrl] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [results, setResults] = useState<ScanResult[]>([]);
   const [securityScore, setSecurityScore] = useState<SecurityScore | null>(null);
+  const [codeDiffs, setCodeDiffs] = useState<CodeDiff[]>([]);
   const { toast } = useToast();
 
   const mockScanResults: ScanResult[] = [
@@ -207,65 +224,19 @@ export const SecurityScanner = () => {
             </Button>
           </div>
 
-          {isScanning && (
-            <div className="space-y-2">
-              <Progress value={scanProgress} className="w-full" />
-              <p className="text-sm text-muted-foreground">
-                {scanProgress.toFixed(0)}% complete
-              </p>
-            </div>
-          )}
+          <EnhancedScanProgress 
+            isScanning={isScanning} 
+            progress={scanProgress} 
+            onComplete={() => {}} 
+          />
         </div>
       </Card>
 
-      {/* Security Score */}
-      {securityScore && (
-        <Card className="p-6 shadow-card border-border/50">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
-              Security Score
-            </h3>
-            
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="text-center space-y-2">
-                <div className={`text-3xl font-bold ${getScoreColor(securityScore.overall)}`}>
-                  {securityScore.overall}
-                </div>
-                <div className="text-sm text-muted-foreground">Overall</div>
-              </div>
-              
-              <div className="text-center space-y-2">
-                <div className={`text-2xl font-semibold ${getScoreColor(securityScore.secrets)}`}>
-                  {securityScore.secrets}
-                </div>
-                <div className="text-sm text-muted-foreground">Secrets</div>
-              </div>
-              
-              <div className="text-center space-y-2">
-                <div className={`text-2xl font-semibold ${getScoreColor(securityScore.vulnerabilities)}`}>
-                  {securityScore.vulnerabilities}
-                </div>
-                <div className="text-sm text-muted-foreground">Dependencies</div>
-              </div>
-              
-              <div className="text-center space-y-2">
-                <div className={`text-2xl font-semibold ${getScoreColor(securityScore.configurations)}`}>
-                  {securityScore.configurations}
-                </div>
-                <div className="text-sm text-muted-foreground">Config</div>
-              </div>
-              
-              <div className="text-center space-y-2">
-                <div className={`text-2xl font-semibold ${getScoreColor(securityScore.patterns)}`}>
-                  {securityScore.patterns}
-                </div>
-                <div className="text-sm text-muted-foreground">Patterns</div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
+      {/* Security Score Chart */}
+      {securityScore && <InteractiveSecurityChart score={securityScore} />}
+      
+      {/* Code Diff Viewer */}
+      {codeDiffs.length > 0 && <CodeDiffViewer diffs={codeDiffs} />}
 
       {/* Scan Results */}
       {results.length > 0 && (

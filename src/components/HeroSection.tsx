@@ -8,11 +8,47 @@ import {
   Lock,
   AlertTriangle,
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  Search
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { SecurityShield3D } from "./SecurityShield3D";
+import { EnhancedTooltip } from "./EnhancedTooltip";
 
 export const HeroSection = () => {
+  const securityTips = {
+    secretDetection: {
+      title: "Secret Detection",
+      description: "Our AI-powered scanner identifies exposed API keys, passwords, and sensitive credentials in your codebase before they become security vulnerabilities.",
+      example: "API_KEY=sk_live_xyz123",
+      recommendation: "Use environment variables and secret management services like AWS Secrets Manager or HashiCorp Vault.",
+      severity: "critical" as const,
+      learnMoreUrl: "https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure"
+    },
+    vulnerabilityAudit: {
+      title: "Vulnerability Assessment", 
+      description: "Comprehensive dependency scanning against the latest CVE database, ensuring your third-party packages don't introduce security risks.",
+      example: "lodash@4.17.10 (CVE-2019-10744)",
+      recommendation: "Regularly update dependencies and use tools like npm audit or GitHub Dependabot for automated monitoring.",
+      severity: "warning" as const,
+      learnMoreUrl: "https://nvd.nist.gov/vuln"
+    },
+    securityPatterns: {
+      title: "Insecure Code Patterns",
+      description: "Advanced static analysis detects common security anti-patterns like SQL injection vectors, XSS vulnerabilities, and insecure cryptographic implementations.",
+      example: "SELECT * FROM users WHERE id = '" + userInput + "'",
+      recommendation: "Use parameterized queries, input validation, and established security libraries.",
+      severity: "critical" as const,
+      learnMoreUrl: "https://owasp.org/www-project-top-ten/"
+    },
+    aiPowered: {
+      title: "AI-Powered Analysis",
+      description: "Machine learning models trained on security best practices provide intelligent recommendations and automated fix suggestions.",
+      example: "Auto-generated secure code alternatives",
+      recommendation: "Review AI suggestions carefully and test thoroughly before implementing fixes.",
+      severity: "info" as const
+    }
+  };
 
   return (
     <div className="relative overflow-hidden">
@@ -32,7 +68,12 @@ export const HeroSection = () => {
 
       {/* Content */}
       <div className="relative min-h-screen flex items-center justify-center px-4">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
+        <div className="max-w-6xl mx-auto text-center space-y-12">
+          
+          {/* 3D Security Visualization */}
+          <div className="mb-8">
+            <SecurityShield3D />
+          </div>
 
           {/* Main Heading */}
           <div className="space-y-4">
@@ -48,24 +89,35 @@ export const HeroSection = () => {
             </p>
           </div>
 
-          {/* Feature Pills */}
+          {/* Feature Pills with Enhanced Tooltips */}
           <div className="flex flex-wrap justify-center gap-3">
-            <div className="flex items-center gap-2 bg-card/50 border border-border/50 rounded-full px-4 py-2">
-              <Eye className="h-4 w-4 text-primary" />
-              <span className="text-sm">Secret Detection</span>
-            </div>
-            <div className="flex items-center gap-2 bg-card/50 border border-border/50 rounded-full px-4 py-2">
-              <AlertTriangle className="h-4 w-4 text-warning" />
-              <span className="text-sm">Vulnerability Audit</span>
-            </div>
-            <div className="flex items-center gap-2 bg-card/50 border border-border/50 rounded-full px-4 py-2">
-              <Lock className="h-4 w-4 text-success" />
-              <span className="text-sm">Security Patterns</span>
-            </div>
-            <div className="flex items-center gap-2 bg-card/50 border border-border/50 rounded-full px-4 py-2">
-              <Zap className="h-4 w-4 text-primary" />
-              <span className="text-sm">AI-Powered</span>
-            </div>
+            <EnhancedTooltip tip={securityTips.secretDetection}>
+              <div className="flex items-center gap-2 bg-card/50 border border-border/50 rounded-full px-4 py-2 cursor-help hover:scale-105 transition-transform">
+                <Search className="h-4 w-4 text-primary" />
+                <span className="text-sm">Secret Detection</span>
+              </div>
+            </EnhancedTooltip>
+            
+            <EnhancedTooltip tip={securityTips.vulnerabilityAudit}>
+              <div className="flex items-center gap-2 bg-card/50 border border-border/50 rounded-full px-4 py-2 cursor-help hover:scale-105 transition-transform">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <span className="text-sm">Vulnerability Audit</span>
+              </div>
+            </EnhancedTooltip>
+            
+            <EnhancedTooltip tip={securityTips.securityPatterns}>
+              <div className="flex items-center gap-2 bg-card/50 border border-border/50 rounded-full px-4 py-2 cursor-help hover:scale-105 transition-transform">
+                <Lock className="h-4 w-4 text-success" />
+                <span className="text-sm">Security Patterns</span>
+              </div>
+            </EnhancedTooltip>
+            
+            <EnhancedTooltip tip={securityTips.aiPowered}>
+              <div className="flex items-center gap-2 bg-card/50 border border-border/50 rounded-full px-4 py-2 cursor-help hover:scale-105 transition-transform">
+                <Zap className="h-4 w-4 text-primary" />
+                <span className="text-sm">AI-Powered</span>
+              </div>
+            </EnhancedTooltip>
           </div>
 
           {/* CTA Buttons */}

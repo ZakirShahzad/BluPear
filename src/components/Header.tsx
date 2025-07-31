@@ -1,7 +1,8 @@
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
-import { Shield, Github, FileText, Settings } from "lucide-react";
+import { Shield, Github, FileText } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { ThemeToggle } from "./ThemeToggle";
 
 export const Header = () => {
   const location = useLocation();
@@ -88,6 +89,7 @@ export const Header = () => {
         </div>
         
         <div className="flex items-center space-x-4">
+          <ThemeToggle />
           <Button variant="ghost" size="sm">
             <Github className="h-4 w-4 mr-2" />
             GitHub

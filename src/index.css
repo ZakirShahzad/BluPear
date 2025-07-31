@@ -79,25 +79,25 @@ All colors MUST be HSL.
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  .dark {
-    /* Light mode variant (keeping same dark theme as default) */
-    --background: 220 30% 8%;
-    --foreground: 210 40% 98%;
+  .light {
+    /* Light mode colors */
+    --background: 210 40% 98%;
+    --foreground: 220 30% 8%;
 
-    --card: 220 25% 10%;
-    --card-foreground: 210 40% 98%;
+    --card: 210 30% 95%;
+    --card-foreground: 220 30% 8%;
 
-    --popover: 220 25% 10%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 210 30% 95%;
+    --popover-foreground: 220 30% 8%;
 
     --primary: 200 100% 50%;
-    --primary-foreground: 220 30% 8%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 220 20% 15%;
-    --secondary-foreground: 210 30% 85%;
+    --secondary: 210 20% 85%;
+    --secondary-foreground: 220 20% 20%;
 
-    --muted: 220 15% 20%;
-    --muted-foreground: 210 20% 65%;
+    --muted: 210 15% 88%;
+    --muted-foreground: 220 20% 40%;
 
     --accent: 200 80% 45%;
     --accent-foreground: 210 40% 98%;
@@ -105,8 +105,8 @@ All colors MUST be HSL.
     --destructive: 0 85% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 220 20% 18%;
-    --input: 220 20% 15%;
+    --border: 210 20% 82%;
+    --input: 210 20% 85%;
     --ring: 200 100% 50%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
