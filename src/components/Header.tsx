@@ -91,15 +91,6 @@ export const Header = () => {
         </div>
         
         <div className="flex items-center space-x-4">
-          <ThemeToggle />
-          <Button variant="ghost" size="sm">
-            <Github className="h-4 w-4 mr-2" />
-            GitHub
-          </Button>
-          <Button variant="ghost" size="sm">
-            <FileText className="h-4 w-4 mr-2" />
-            Docs
-          </Button>
           {user ? (
             <div className="flex items-center space-x-3">
               <span className="text-sm text-muted-foreground">
