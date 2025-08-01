@@ -19,6 +19,9 @@ interface ScanResult {
   file: string;
   line?: number;
   suggestion?: string;
+  impact?: string;
+  cwe_reference?: string;
+  owasp_category?: string;
 }
 
 interface SecurityScore {
@@ -79,39 +82,53 @@ async function analyzeCodeWithAI(content: string, filename: string, fileType: st
   }
 
   try {
-    const prompt = `You are a cybersecurity expert analyzing source code for vulnerabilities. 
-    
-TASK: Analyze the following ${fileType} file for security issues and return ONLY a valid JSON array.
+    const prompt = `You are a senior cybersecurity expert with extensive experience in application security, penetration testing, and secure coding practices. Analyze the following source code for security vulnerabilities with exceptional detail and precision.
 
-ANALYSIS CATEGORIES:
-1. SECRETS: API keys, passwords, tokens, credentials hardcoded in source
-2. VULNERABILITIES: Code injection, XSS, CSRF, insecure crypto, auth bypasses  
-3. MISCONFIGURATIONS: Debug flags, permissive CORS, weak settings
-4. PATTERNS: Insecure coding patterns, weak randomness, unsafe functions
+TASK: Perform a comprehensive security analysis of the ${fileType} file and return ONLY a valid JSON array with detailed findings.
 
-SEVERITY LEVELS:
-- critical: Immediate security risk (exposed secrets, RCE)
-- high: Serious vulnerability (XSS, SQL injection) 
-- medium: Security concern (weak config, info disclosure)
-- low: Best practice violation (deprecated functions)
+ANALYSIS FRAMEWORK:
+1. SECRETS & CREDENTIALS: Hardcoded API keys, passwords, tokens, certificates, database credentials, encryption keys
+2. INJECTION VULNERABILITIES: SQL injection, NoSQL injection, LDAP injection, OS command injection, code injection
+3. AUTHENTICATION & AUTHORIZATION: Broken authentication, session management flaws, privilege escalation, insecure direct object references
+4. CRYPTOGRAPHIC ISSUES: Weak algorithms, improper key management, insecure random number generation, weak hashing
+5. INPUT VALIDATION: XSS, CSRF, path traversal, file upload vulnerabilities, deserialization attacks
+6. CONFIGURATION SECURITY: Debug modes, verbose error messages, insecure defaults, missing security headers
+7. BUSINESS LOGIC FLAWS: Race conditions, workflow bypasses, insufficient rate limiting
+8. INFORMATION DISCLOSURE: Sensitive data exposure, error message leakage, logging sensitive information
+
+SEVERITY CLASSIFICATION:
+- CRITICAL: Immediate exploit risk, data breach potential, system compromise (RCE, exposed secrets, auth bypass)
+- HIGH: Serious security impact, user data at risk (XSS, SQL injection, privilege escalation)  
+- MEDIUM: Security weakness, potential for exploitation (weak crypto, CSRF, info disclosure)
+- LOW: Security best practice violation, hardening opportunity (deprecated functions, weak configs)
 
 FILE: ${filename}
 CONTENT:
 \`\`\`${fileType}
-${content.slice(0, 8000)}
+${content.slice(0, 12000)}
 \`\`\`
 
-Return ONLY a JSON array of security issues found. Each issue must have:
+For each security issue identified, provide:
 {
   "type": "secret|vulnerability|misconfiguration|pattern",
-  "severity": "critical|high|medium|low", 
-  "title": "Brief descriptive title",
-  "description": "Detailed explanation of the security issue",
-  "line": number (if identifiable),
-  "suggestion": "Specific remediation advice"
+  "severity": "critical|high|medium|low",
+  "title": "Specific, technical issue title",
+  "description": "Comprehensive explanation including: 1) What the vulnerability is, 2) Why it's dangerous, 3) How it could be exploited, 4) What data/systems are at risk, 5) Real-world attack scenarios",
+  "line": line_number_if_identifiable,
+  "remediation": "Detailed step-by-step fix instructions including: 1) Immediate mitigation steps, 2) Proper implementation example, 3) Additional security considerations, 4) Testing/verification steps, 5) Prevention strategies for future development",
+  "impact": "Detailed explanation of potential business and technical impact",
+  "cwe_reference": "Common Weakness Enumeration ID if applicable (e.g., CWE-79, CWE-89)",
+  "owasp_category": "OWASP Top 10 category if applicable (e.g., A03:2021 - Injection)"
 }
 
-If no issues found, return empty array []. Do not include explanations or markdown.`;
+REQUIREMENTS:
+- Provide exhaustive technical analysis for each finding
+- Include specific code examples in remediation advice
+- Explain attack vectors and exploitation techniques
+- Consider both immediate and long-term security implications
+- Reference industry standards (OWASP, CWE, NIST) where applicable
+- If no issues found, return empty array []
+- Return ONLY valid JSON, no explanations or markdown outside the JSON structure`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -122,11 +139,11 @@ If no issues found, return empty array []. Do not include explanations or markdo
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'You are a cybersecurity expert. Analyze code and return ONLY valid JSON arrays of security issues. No explanations, no markdown, just JSON.' },
+          { role: 'system', content: 'You are a senior cybersecurity expert specializing in comprehensive vulnerability assessment. Provide detailed, actionable security analysis in JSON format with extensive technical explanations and remediation guidance.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.1,
-        max_tokens: 2000,
+        max_tokens: 4000,
       }),
     });
 
@@ -152,7 +169,7 @@ If no issues found, return empty array []. Do not include explanations or markdo
       return [];
     }
 
-    // Convert to ScanResult format
+    // Convert to ScanResult format with enhanced details
     return issues.map((issue, index) => ({
       id: `ai-${filename}-${index}`,
       type: issue.type || 'pattern',
@@ -161,7 +178,10 @@ If no issues found, return empty array []. Do not include explanations or markdo
       description: issue.description || 'Security issue detected by AI analysis',
       file: filename,
       line: issue.line,
-      suggestion: issue.suggestion || 'Review and implement security best practices'
+      suggestion: issue.remediation || issue.suggestion || 'Review and implement security best practices',
+      impact: issue.impact || 'Potential security risk identified',
+      cwe_reference: issue.cwe_reference || '',
+      owasp_category: issue.owasp_category || ''
     }));
 
   } catch (error) {

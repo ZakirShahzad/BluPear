@@ -269,35 +269,86 @@ const Reports = () => {
 
                                     <Card>
                                       <CardHeader>
-                                        <CardTitle>Detailed Findings</CardTitle>
+                                        <CardTitle>Detailed Security Findings</CardTitle>
+                                        <CardDescription>
+                                          Comprehensive analysis with remediation guidance
+                                        </CardDescription>
                                       </CardHeader>
                                       <CardContent>
-                                        <div className="space-y-4">
+                                        <div className="space-y-6">
                                           {selectedReport.scan_results?.findings?.map((finding: any, index: number) => (
-                                            <div key={index} className="border rounded-lg p-4">
-                                              <div className="flex items-center gap-2 mb-2">
-                                                <Badge variant={
-                                                  finding.severity === 'critical' ? 'destructive' :
-                                                  finding.severity === 'high' ? 'destructive' :
-                                                  finding.severity === 'medium' ? 'secondary' : 'outline'
-                                                }>
-                                                  {finding.severity}
-                                                </Badge>
-                                                <h4 className="font-semibold">{finding.type}</h4>
-                                              </div>
-                                              <p className="text-sm text-muted-foreground mb-2">{finding.description}</p>
-                                              {finding.file && (
-                                                <p className="text-xs text-muted-foreground mb-2">
-                                                  File: {finding.file}
-                                                </p>
-                                              )}
-                                              {finding.remediation && (
-                                                <div className="bg-muted p-3 rounded text-sm">
-                                                  <strong>Remediation:</strong> {finding.remediation}
+                                            <div key={index} className="border rounded-lg p-6 space-y-4">
+                                              <div className="flex items-start justify-between">
+                                                <div className="flex items-center gap-3">
+                                                  <Badge variant={
+                                                    finding.severity === 'critical' ? 'destructive' :
+                                                    finding.severity === 'high' ? 'destructive' :
+                                                    finding.severity === 'medium' ? 'secondary' : 'outline'
+                                                  }>
+                                                    {finding.severity?.toUpperCase()}
+                                                  </Badge>
+                                                  <Badge variant="outline">{finding.type}</Badge>
                                                 </div>
-                                              )}
+                                                <div className="text-right text-xs text-muted-foreground">
+                                                  {finding.cwe_reference && <div>CWE: {finding.cwe_reference}</div>}
+                                                  {finding.owasp_category && <div>{finding.owasp_category}</div>}
+                                                </div>
+                                              </div>
+                                              
+                                              <div>
+                                                <h4 className="font-semibold text-lg mb-2">{finding.title}</h4>
+                                                {finding.file && (
+                                                  <p className="text-sm text-muted-foreground mb-3 flex items-center gap-1">
+                                                    <span className="font-medium">File:</span> {finding.file}
+                                                    {finding.line && <span>(Line {finding.line})</span>}
+                                                  </p>
+                                                )}
+                                              </div>
+
+                                              <div className="space-y-4">
+                                                <div>
+                                                  <h5 className="font-semibold mb-2 flex items-center gap-2">
+                                                    <AlertTriangle className="w-4 h-4" />
+                                                    Issue Description
+                                                  </h5>
+                                                  <div className="bg-muted/50 p-4 rounded-lg">
+                                                    <p className="text-sm leading-relaxed">{finding.description}</p>
+                                                  </div>
+                                                </div>
+
+                                                {finding.impact && (
+                                                  <div>
+                                                    <h5 className="font-semibold mb-2 flex items-center gap-2">
+                                                      <Shield className="w-4 h-4" />
+                                                      Security Impact
+                                                    </h5>
+                                                    <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-lg">
+                                                      <p className="text-sm leading-relaxed">{finding.impact}</p>
+                                                    </div>
+                                                  </div>
+                                                )}
+
+                                                {(finding.suggestion || finding.remediation) && (
+                                                  <div>
+                                                    <h5 className="font-semibold mb-2 flex items-center gap-2">
+                                                      <ExternalLink className="w-4 h-4" />
+                                                      Remediation Steps
+                                                    </h5>
+                                                    <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4 rounded-lg">
+                                                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                                                        {finding.remediation || finding.suggestion}
+                                                      </p>
+                                                    </div>
+                                                  </div>
+                                                )}
+                                              </div>
                                             </div>
-                                          )) || <p className="text-muted-foreground">No detailed findings available.</p>}
+                                          )) || (
+                                            <div className="text-center py-8">
+                                              <Shield className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                                              <p className="text-muted-foreground">No detailed findings available for this report.</p>
+                                            </div>
+                                          )}
                                         </div>
                                       </CardContent>
                                     </Card>
