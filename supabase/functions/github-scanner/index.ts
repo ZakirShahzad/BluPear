@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 const corsHeaders = {
@@ -27,28 +28,6 @@ interface SecurityScore {
   configurations: number;
   patterns: number;
 }
-
-// Security patterns to scan for
-const SECRET_PATTERNS = [
-  { pattern: /(?:key|api|token|secret|password)\s*[:=]\s*['"]?([a-zA-Z0-9_-]{20,})['"]?/gi, type: 'API Key' },
-  { pattern: /(?:aws_access_key_id|aws_secret_access_key)\s*[:=]\s*['"]?([A-Z0-9]{20})['"]?/gi, type: 'AWS Key' },
-  { pattern: /(?:github_token|gh_token)\s*[:=]\s*['"]?(ghp_[a-zA-Z0-9]{36})['"]?/gi, type: 'GitHub Token' },
-  { pattern: /(?:openai_api_key|openai_key)\s*[:=]\s*['"]?(sk-[a-zA-Z0-9]{48})['"]?/gi, type: 'OpenAI Key' },
-  { pattern: /(?:stripe_key|stripe_secret)\s*[:=]\s*['"]?(sk_live_[a-zA-Z0-9]{99})['"]?/gi, type: 'Stripe Key' },
-];
-
-const VULNERABILITY_PATTERNS = [
-  { pattern: /eval\s*\(/gi, title: 'Code Injection Risk', severity: 'critical' as const },
-  { pattern: /innerHTML\s*=.*\+/gi, title: 'XSS Vulnerability', severity: 'high' as const },
-  { pattern: /document\.cookie/gi, title: 'Cookie Access', severity: 'medium' as const },
-  { pattern: /Math\.random\(\).*password|Math\.random\(\).*token/gi, title: 'Weak Random Generation', severity: 'medium' as const },
-];
-
-const MISCONFIGURATION_PATTERNS = [
-  { pattern: /debug\s*[:=]\s*true/gi, title: 'Debug Mode Enabled', severity: 'medium' as const },
-  { pattern: /cors\s*[:=]\s*\*|Access-Control-Allow-Origin.*\*/gi, title: 'Permissive CORS', severity: 'medium' as const },
-  { pattern: /http:\/\/(?!localhost)/gi, title: 'HTTP Usage', severity: 'low' as const },
-];
 
 async function parseGitHubUrl(url: string): Promise<{ owner: string; repo: string } | null> {
   const match = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
@@ -93,66 +72,130 @@ async function fetchFileContent(owner: string, repo: string, path: string): Prom
   }
 }
 
-function scanFileContent(content: string, filename: string): ScanResult[] {
-  const results: ScanResult[] = [];
-  const lines = content.split('\n');
+async function analyzeCodeWithAI(content: string, filename: string, fileType: string): Promise<ScanResult[]> {
+  const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+  if (!openAIApiKey) {
+    throw new Error('OpenAI API key not configured');
+  }
 
-  // Scan for secrets
-  SECRET_PATTERNS.forEach(({ pattern, type }) => {
-    lines.forEach((line, index) => {
-      const matches = line.match(pattern);
-      if (matches) {
-        results.push({
-          id: `secret-${filename}-${index}`,
-          type: 'secret',
-          severity: 'critical',
-          title: `Exposed ${type}`,
-          description: `Potential ${type.toLowerCase()} found in source code`,
-          file: filename,
-          line: index + 1,
-          suggestion: 'Move secrets to environment variables and use proper secret management'
-        });
-      }
+  try {
+    const prompt = `You are a cybersecurity expert analyzing source code for vulnerabilities. 
+    
+TASK: Analyze the following ${fileType} file for security issues and return ONLY a valid JSON array.
+
+ANALYSIS CATEGORIES:
+1. SECRETS: API keys, passwords, tokens, credentials hardcoded in source
+2. VULNERABILITIES: Code injection, XSS, CSRF, insecure crypto, auth bypasses  
+3. MISCONFIGURATIONS: Debug flags, permissive CORS, weak settings
+4. PATTERNS: Insecure coding patterns, weak randomness, unsafe functions
+
+SEVERITY LEVELS:
+- critical: Immediate security risk (exposed secrets, RCE)
+- high: Serious vulnerability (XSS, SQL injection) 
+- medium: Security concern (weak config, info disclosure)
+- low: Best practice violation (deprecated functions)
+
+FILE: ${filename}
+CONTENT:
+\`\`\`${fileType}
+${content.slice(0, 8000)}
+\`\`\`
+
+Return ONLY a JSON array of security issues found. Each issue must have:
+{
+  "type": "secret|vulnerability|misconfiguration|pattern",
+  "severity": "critical|high|medium|low", 
+  "title": "Brief descriptive title",
+  "description": "Detailed explanation of the security issue",
+  "line": number (if identifiable),
+  "suggestion": "Specific remediation advice"
+}
+
+If no issues found, return empty array []. Do not include explanations or markdown.`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'You are a cybersecurity expert. Analyze code and return ONLY valid JSON arrays of security issues. No explanations, no markdown, just JSON.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.1,
+        max_tokens: 2000,
+      }),
     });
-  });
 
-  // Scan for vulnerabilities
-  VULNERABILITY_PATTERNS.forEach(({ pattern, title, severity }) => {
-    lines.forEach((line, index) => {
-      if (pattern.test(line)) {
-        results.push({
-          id: `vuln-${filename}-${index}`,
-          type: 'vulnerability',
-          severity,
-          title,
-          description: `Potential security vulnerability detected`,
-          file: filename,
-          line: index + 1,
-          suggestion: 'Review and implement secure coding practices'
-        });
-      }
-    });
-  });
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
 
-  // Scan for misconfigurations
-  MISCONFIGURATION_PATTERNS.forEach(({ pattern, title, severity }) => {
-    lines.forEach((line, index) => {
-      if (pattern.test(line)) {
-        results.push({
-          id: `config-${filename}-${index}`,
-          type: 'misconfiguration',
-          severity,
-          title,
-          description: `Security misconfiguration detected`,
-          file: filename,
-          line: index + 1,
-          suggestion: 'Review configuration settings for production security'
-        });
-      }
-    });
-  });
+    const data = await response.json();
+    const aiResponse = data.choices[0].message.content.trim();
+    
+    console.log(`AI response for ${filename}:`, aiResponse);
 
-  return results;
+    // Parse the JSON response
+    let issues: any[] = [];
+    try {
+      // Extract JSON if wrapped in markdown
+      const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
+      const jsonStr = jsonMatch ? jsonMatch[0] : aiResponse;
+      issues = JSON.parse(jsonStr);
+    } catch (parseError) {
+      console.error('Failed to parse AI response as JSON:', parseError);
+      console.error('Raw response:', aiResponse);
+      return [];
+    }
+
+    // Convert to ScanResult format
+    return issues.map((issue, index) => ({
+      id: `ai-${filename}-${index}`,
+      type: issue.type || 'pattern',
+      severity: issue.severity || 'medium',
+      title: issue.title || 'Security Issue',
+      description: issue.description || 'Security issue detected by AI analysis',
+      file: filename,
+      line: issue.line,
+      suggestion: issue.suggestion || 'Review and implement security best practices'
+    }));
+
+  } catch (error) {
+    console.error(`AI analysis error for ${filename}:`, error);
+    return [];
+  }
+}
+
+function getFileType(filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  const typeMap: { [key: string]: string } = {
+    'js': 'javascript',
+    'ts': 'typescript', 
+    'jsx': 'javascript',
+    'tsx': 'typescript',
+    'py': 'python',
+    'java': 'java',
+    'php': 'php',
+    'rb': 'ruby',
+    'go': 'go',
+    'rs': 'rust',
+    'cpp': 'cpp',
+    'c': 'c',
+    'cs': 'csharp',
+    'swift': 'swift',
+    'kt': 'kotlin',
+    'scala': 'scala',
+    'json': 'json',
+    'yaml': 'yaml',
+    'yml': 'yaml',
+    'env': 'environment',
+    'config': 'configuration'
+  };
+  return typeMap[ext || ''] || 'text';
 }
 
 function calculateSecurityScore(results: ScanResult[]): SecurityScore {
@@ -163,14 +206,16 @@ function calculateSecurityScore(results: ScanResult[]): SecurityScore {
     pattern: results.filter(r => r.type === 'pattern').length,
   };
 
-  const severityWeights = { critical: 25, high: 15, medium: 10, low: 5 };
+  const severityWeights = { critical: 30, high: 20, medium: 10, low: 5 };
   const totalDeductions = results.reduce((sum, result) => sum + severityWeights[result.severity], 0);
   
-  const secrets = Math.max(0, 100 - (typeCount.secret * 30));
+  // Calculate category-specific scores
+  const secrets = Math.max(0, 100 - (typeCount.secret * 25));
   const vulnerabilities = Math.max(0, 100 - (typeCount.vulnerability * 20));
   const configurations = Math.max(0, 100 - (typeCount.misconfiguration * 15));
   const patterns = Math.max(0, 100 - (typeCount.pattern * 10));
   
+  // Overall score considers both issue count and severity
   const overall = Math.max(0, 100 - Math.min(totalDeductions, 100));
 
   return {
@@ -190,7 +235,7 @@ serve(async (req) => {
   try {
     const { repoUrl }: ScanRequest = await req.json();
     
-    console.log('Starting scan for repository:', repoUrl);
+    console.log('Starting AI-powered scan for repository:', repoUrl);
     
     // Parse GitHub URL
     const repoInfo = await parseGitHubUrl(repoUrl);
@@ -204,25 +249,39 @@ serve(async (req) => {
     // Fetch repository structure
     const files = await fetchRepositoryFiles(owner, repo);
     
-    // Filter files to scan (code files only)
+    // Filter and prioritize files to scan
     const codeFiles = files.filter(file => 
       file.type === 'blob' && 
       /\.(js|ts|jsx|tsx|py|java|php|rb|go|rs|cpp|c|h|cs|swift|kt|scala|json|yaml|yml|env|config)$/i.test(file.path) &&
-      file.size < 1000000 // Skip files larger than 1MB
-    ).slice(0, 50); // Limit to first 50 files to avoid rate limits
+      file.size < 500000 // Skip files larger than 500KB
+    )
+    .sort((a, b) => {
+      // Prioritize sensitive files
+      const sensitivePatterns = ['config', 'env', 'secret', 'key', 'auth', 'security'];
+      const aScore = sensitivePatterns.some(p => a.path.toLowerCase().includes(p)) ? 1 : 0;
+      const bScore = sensitivePatterns.some(p => b.path.toLowerCase().includes(p)) ? 1 : 0;
+      return bScore - aScore;
+    })
+    .slice(0, 25); // Limit to 25 files for API cost management
 
-    console.log(`Found ${codeFiles.length} code files to scan`);
+    console.log(`Found ${codeFiles.length} code files to analyze with AI`);
 
     const allResults: ScanResult[] = [];
 
-    // Scan each file
+    // Analyze each file with AI
     for (const file of codeFiles) {
       try {
         const content = await fetchFileContent(owner, repo, file.path);
-        const fileResults = scanFileContent(content, file.path);
-        allResults.push(...fileResults);
+        if (content.length > 0) {
+          const fileType = getFileType(file.path);
+          const fileResults = await analyzeCodeWithAI(content, file.path, fileType);
+          allResults.push(...fileResults);
+          
+          // Small delay to respect rate limits
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
       } catch (error) {
-        console.error(`Error scanning file ${file.path}:`, error);
+        console.error(`Error analyzing file ${file.path}:`, error);
         // Continue with other files
       }
     }
@@ -230,21 +289,22 @@ serve(async (req) => {
     // Calculate security score
     const securityScore = calculateSecurityScore(allResults);
 
-    console.log(`Scan complete. Found ${allResults.length} issues.`);
+    console.log(`AI scan complete. Found ${allResults.length} issues.`);
 
     return new Response(JSON.stringify({
       success: true,
       results: allResults,
       securityScore,
       filesScanned: codeFiles.length,
-      repository: `${owner}/${repo}`
+      repository: `${owner}/${repo}`,
+      analysisMethod: 'AI-Powered'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error) {
-    console.error('Scan error:', error);
+    console.error('AI scan error:', error);
     return new Response(JSON.stringify({
       success: false,
       error: error.message
