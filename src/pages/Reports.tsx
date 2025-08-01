@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ExternalLink, AlertTriangle, Shield, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -35,6 +36,7 @@ const Reports = () => {
   const { user, loading } = useAuth();
   const [reports, setReports] = useState<ScanReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedReport, setSelectedReport] = useState<ScanReport | null>(null);
 
   useEffect(() => {
     if (!loading && user) {
@@ -123,17 +125,11 @@ const Reports = () => {
       <div className="min-h-screen bg-background">
         <Header />
         <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-4xl font-bold text-foreground mb-2">Security Reports</h1>
-              <p className="text-lg text-muted-foreground">
-                View comprehensive security analysis reports for your repositories.
-              </p>
-            </div>
-            <Button onClick={() => window.location.href = '/scanner'} className="flex items-center gap-2">
-              <Shield className="w-4 h-4" />
-              New Scan
-            </Button>
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-foreground mb-2">Security Reports</h1>
+            <p className="text-lg text-muted-foreground">
+              View comprehensive security analysis reports for your repositories.
+            </p>
           </div>
 
           {reports.length === 0 ? (
@@ -220,16 +216,95 @@ const Reports = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => {
-                                // Navigate to scanner with this repo URL
-                                window.location.href = `/scanner?repo=${encodeURIComponent(report.repository_url)}`;
-                              }}
-                            >
-                              View Details
-                            </Button>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => setSelectedReport(report)}
+                                >
+                                  View Details
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                                <DialogHeader>
+                                  <DialogTitle>Security Report: {report.repository_name}</DialogTitle>
+                                </DialogHeader>
+                                {selectedReport && (
+                                  <div className="space-y-6">
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <Card>
+                                        <CardHeader>
+                                          <CardTitle className="text-sm">Security Score</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                          <div className={`text-2xl font-bold ${getScoreColor(selectedReport.security_score)}`}>
+                                            {selectedReport.security_score}/100
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                      <Card>
+                                        <CardHeader>
+                                          <CardTitle className="text-sm">Total Issues</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                          <div className="text-2xl font-bold">{selectedReport.total_issues}</div>
+                                        </CardContent>
+                                      </Card>
+                                    </div>
+                                    
+                                    <Card>
+                                      <CardHeader>
+                                        <CardTitle>Issues by Severity</CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <div className="flex flex-wrap gap-2">
+                                          {getSeverityBadge('critical', selectedReport.critical_issues)}
+                                          {getSeverityBadge('high', selectedReport.high_issues)}
+                                          {getSeverityBadge('medium', selectedReport.medium_issues)}
+                                          {getSeverityBadge('low', selectedReport.low_issues)}
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+
+                                    <Card>
+                                      <CardHeader>
+                                        <CardTitle>Detailed Findings</CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <div className="space-y-4">
+                                          {selectedReport.scan_results?.findings?.map((finding: any, index: number) => (
+                                            <div key={index} className="border rounded-lg p-4">
+                                              <div className="flex items-center gap-2 mb-2">
+                                                <Badge variant={
+                                                  finding.severity === 'critical' ? 'destructive' :
+                                                  finding.severity === 'high' ? 'destructive' :
+                                                  finding.severity === 'medium' ? 'secondary' : 'outline'
+                                                }>
+                                                  {finding.severity}
+                                                </Badge>
+                                                <h4 className="font-semibold">{finding.type}</h4>
+                                              </div>
+                                              <p className="text-sm text-muted-foreground mb-2">{finding.description}</p>
+                                              {finding.file && (
+                                                <p className="text-xs text-muted-foreground mb-2">
+                                                  File: {finding.file}
+                                                </p>
+                                              )}
+                                              {finding.remediation && (
+                                                <div className="bg-muted p-3 rounded text-sm">
+                                                  <strong>Remediation:</strong> {finding.remediation}
+                                                </div>
+                                              )}
+                                            </div>
+                                          )) || <p className="text-muted-foreground">No detailed findings available.</p>}
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  </div>
+                                )}
+                              </DialogContent>
+                            </Dialog>
                           </TableCell>
                         </TableRow>
                       ))}
