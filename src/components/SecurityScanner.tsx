@@ -17,6 +17,7 @@ import {
   Bug
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { InteractiveSecurityChart } from "./InteractiveSecurityChart";
 import { CodeDiffViewer } from "./CodeDiffViewer";
 import { EnhancedScanProgress } from "./EnhancedScanProgress";
@@ -122,40 +123,86 @@ export const SecurityScanner = () => {
       return;
     }
 
+    // Validate GitHub URL format
+    const githubUrlPattern = /^https:\/\/github\.com\/[^\/]+\/[^\/]+/;
+    if (!githubUrlPattern.test(repoUrl.trim())) {
+      toast({
+        title: "Invalid URL Format",
+        description: "Please enter a valid GitHub repository URL (e.g., https://github.com/owner/repo)",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsScanning(true);
     setScanProgress(0);
     setResults([]);
     setSecurityScore(null);
 
-    // Simulate scanning process
-    const scanSteps = [
-      "Cloning repository...",
-      "Scanning for secrets...", 
-      "Analyzing dependencies...",
-      "Checking configurations...",
-      "Detecting insecure patterns...",
-      "Generating security report..."
+    // Simulate progress steps
+    const progressSteps = [
+      { progress: 10, message: "Connecting to repository..." },
+      { progress: 25, message: "Fetching repository structure..." },
+      { progress: 40, message: "Scanning for secrets..." },
+      { progress: 60, message: "Analyzing dependencies..." },
+      { progress: 75, message: "Checking configurations..." },
+      { progress: 90, message: "Detecting insecure patterns..." },
+      { progress: 100, message: "Generating security report..." }
     ];
 
-    for (let i = 0; i < scanSteps.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setScanProgress((i + 1) * (100 / scanSteps.length));
+    try {
+      // Start the actual scan
+      const scanPromise = supabase.functions.invoke('github-scanner', {
+        body: { repoUrl: repoUrl.trim() }
+      });
+
+      // Update progress while scanning
+      for (const step of progressSteps) {
+        await new Promise(resolve => setTimeout(resolve, 800));
+        setScanProgress(step.progress);
+        
+        toast({
+          title: "Scanning Progress",
+          description: step.message
+        });
+      }
+
+      // Wait for scan to complete
+      const { data, error } = await scanPromise;
+
+      if (error) {
+        throw new Error(error.message || 'Scan failed');
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Scan failed');
+      }
+
+      setResults(data.results || []);
+      setSecurityScore(data.securityScore || mockSecurityScore);
       
       toast({
-        title: "Scanning Progress",
-        description: scanSteps[i]
+        title: "Scan Complete",
+        description: `Found ${data.results?.length || 0} security issues in ${data.filesScanned || 0} files`,
+        variant: "default"
       });
+
+    } catch (error) {
+      console.error('Scan error:', error);
+      
+      // Fallback to mock data on error
+      setResults(mockScanResults);
+      setSecurityScore(mockSecurityScore);
+      
+      toast({
+        title: "Scan Error",
+        description: error.message || "Failed to scan repository. Using sample data.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsScanning(false);
+      setScanProgress(100);
     }
-
-    setResults(mockScanResults);
-    setSecurityScore(mockSecurityScore);
-    setIsScanning(false);
-
-    toast({
-      title: "Scan Complete",
-      description: `Found ${mockScanResults.length} security issues`,
-      variant: "default"
-    });
   };
 
   const getSeverityIcon = (severity: string) => {

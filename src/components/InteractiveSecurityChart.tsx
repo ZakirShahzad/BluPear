@@ -1,4 +1,4 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell } from "recharts";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +38,6 @@ const getScoreLabel = (score: number) => {
 
 export const InteractiveSecurityChart = ({ score }: InteractiveSecurityChartProps) => {
   const [activeSegment, setActiveSegment] = useState<string | null>(null);
-  const [selectedView, setSelectedView] = useState<'pie' | 'bar'>('pie');
 
   const chartData = [
     { name: 'Secrets', value: score.secrets, fullName: 'Secret Detection' },
@@ -67,54 +66,10 @@ export const InteractiveSecurityChart = ({ score }: InteractiveSecurityChartProp
     return null;
   };
 
-  const renderActiveShape = (props: any) => {
-    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
-    
-    return (
-      <g>
-        <Sector
-          cx={cx}
-          cy={cy}
-          innerRadius={innerRadius}
-          outerRadius={outerRadius + 10}
-          startAngle={startAngle}
-          endAngle={endAngle}
-          fill={fill}
-          stroke={fill}
-          strokeWidth={2}
-        />
-      </g>
-    );
-  };
-
   return (
     <Card className="bg-card/50 backdrop-blur border-border/50">
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-bold text-foreground">Security Breakdown</CardTitle>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setSelectedView('pie')}
-              className={`px-3 py-1 rounded text-sm transition-all ${
-                selectedView === 'pie' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-              }`}
-            >
-              Pie
-            </button>
-            <button
-              onClick={() => setSelectedView('bar')}
-              className={`px-3 py-1 rounded text-sm transition-all ${
-                selectedView === 'bar' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-              }`}
-            >
-              Bar
-            </button>
-          </div>
-        </div>
+        <CardTitle className="text-xl font-bold text-foreground">Security Breakdown</CardTitle>
         
         <div className="text-center py-4">
           <div className="text-4xl font-bold mb-2" style={{ color: getScoreColor(score.overall) }}>
@@ -129,67 +84,42 @@ export const InteractiveSecurityChart = ({ score }: InteractiveSecurityChartProp
       <CardContent>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            {selectedView === 'pie' ? (
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={120}
-                  paddingAngle={2}
-                  dataKey="value"
-                  onMouseEnter={(_, index) => setActiveSegment(chartData[index].name)}
-                  onMouseLeave={() => setActiveSegment(null)}
-                  className="transition-all duration-300"
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={getScoreColor(entry.value)}
-                      stroke={activeSegment === entry.name ? "#ffffff" : "transparent"}
-                      strokeWidth={activeSegment === entry.name ? 2 : 0}
-                      style={{
-                        filter: activeSegment === entry.name ? 'brightness(1.1)' : 'brightness(1)',
-                        transition: 'all 0.3s ease'
-                      }}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            ) : (
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="name" 
-                  stroke="hsl(var(--muted-foreground))" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis 
-                  stroke="hsl(var(--muted-foreground))" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  domain={[0, 100]}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar 
-                  dataKey="value" 
-                  radius={[4, 4, 0, 0]}
-                  className="transition-all duration-300"
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={getScoreColor(entry.value)}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            )}
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis 
+                dataKey="name" 
+                stroke="hsl(var(--muted-foreground))" 
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis 
+                stroke="hsl(var(--muted-foreground))" 
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                domain={[0, 100]}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar 
+                dataKey="value" 
+                radius={[4, 4, 0, 0]}
+                className="transition-all duration-300"
+                onMouseEnter={(_, index) => setActiveSegment(chartData[index].name)}
+                onMouseLeave={() => setActiveSegment(null)}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={getScoreColor(entry.value)}
+                    style={{
+                      filter: activeSegment === entry.name ? 'brightness(1.2)' : 'brightness(1)',
+                      transition: 'all 0.3s ease'
+                    }}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         </div>
         
@@ -220,23 +150,5 @@ export const InteractiveSecurityChart = ({ score }: InteractiveSecurityChartProp
         </div>
       </CardContent>
     </Card>
-  );
-};
-
-// Add Sector component for pie chart active shape
-const Sector = (props: any) => {
-  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, stroke, strokeWidth } = props;
-  
-  return (
-    <path
-      d={`M ${cx + innerRadius * Math.cos(-startAngle * Math.PI / 180)} ${cy + innerRadius * Math.sin(-startAngle * Math.PI / 180)}
-          A ${innerRadius} ${innerRadius} 0 ${endAngle - startAngle > 180 ? 1 : 0} 1 ${cx + innerRadius * Math.cos(-endAngle * Math.PI / 180)} ${cy + innerRadius * Math.sin(-endAngle * Math.PI / 180)}
-          L ${cx + outerRadius * Math.cos(-endAngle * Math.PI / 180)} ${cy + outerRadius * Math.sin(-endAngle * Math.PI / 180)}
-          A ${outerRadius} ${outerRadius} 0 ${endAngle - startAngle > 180 ? 1 : 0} 0 ${cx + outerRadius * Math.cos(-startAngle * Math.PI / 180)} ${cy + outerRadius * Math.sin(-startAngle * Math.PI / 180)}
-          Z`}
-      fill={fill}
-      stroke={stroke}
-      strokeWidth={strokeWidth}
-    />
   );
 };

@@ -1,1 +1,4 @@
 project_id = "rcpzrkikgelpmqzdzxww"
+
+[functions.github-scanner]
+verify_jwt = false
