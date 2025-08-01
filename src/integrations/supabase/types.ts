@@ -38,6 +38,54 @@ export type Database = {
         }
         Relationships: []
       }
+      scan_reports: {
+        Row: {
+          created_at: string
+          critical_issues: number
+          high_issues: number
+          id: string
+          low_issues: number
+          medium_issues: number
+          repository_name: string
+          repository_url: string
+          scan_results: Json
+          security_score: number
+          total_issues: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          critical_issues: number
+          high_issues: number
+          id?: string
+          low_issues: number
+          medium_issues: number
+          repository_name: string
+          repository_url: string
+          scan_results: Json
+          security_score: number
+          total_issues: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          critical_issues?: number
+          high_issues?: number
+          id?: string
+          low_issues?: number
+          medium_issues?: number
+          repository_name?: string
+          repository_url?: string
+          scan_results?: Json
+          security_score?: number
+          total_issues?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

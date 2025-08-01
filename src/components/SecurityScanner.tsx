@@ -181,6 +181,31 @@ export const SecurityScanner = () => {
       setResults(data.results || []);
       setSecurityScore(data.securityScore || mockSecurityScore);
       
+      // Save scan report to database
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const repositoryName = repoUrl.split('/').slice(-2).join('/');
+        const scanResults = data.results || [];
+        const totalIssues = scanResults.length;
+        const criticalIssues = scanResults.filter((r: any) => r.severity === 'critical').length;
+        const highIssues = scanResults.filter((r: any) => r.severity === 'high').length;
+        const mediumIssues = scanResults.filter((r: any) => r.severity === 'medium').length;
+        const lowIssues = scanResults.filter((r: any) => r.severity === 'low').length;
+
+        await supabase.from('scan_reports').insert({
+          user_id: user.id,
+          repository_url: repoUrl.trim(),
+          repository_name: repositoryName,
+          security_score: data.securityScore?.overall || mockSecurityScore.overall,
+          total_issues: totalIssues,
+          critical_issues: criticalIssues,
+          high_issues: highIssues,
+          medium_issues: mediumIssues,
+          low_issues: lowIssues,
+          scan_results: scanResults
+        });
+      }
+      
       toast({
         title: "Scan Complete",
         description: `Found ${data.results?.length || 0} security issues in ${data.filesScanned || 0} files`,
