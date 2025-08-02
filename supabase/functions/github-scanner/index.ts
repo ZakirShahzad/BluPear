@@ -1,10 +1,15 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_HOURS = 1;
+const RATE_LIMIT_MAX_REQUESTS = 5;
 
 interface ScanRequest {
   repoUrl: string;
@@ -218,6 +223,60 @@ function getFileType(filename: string): string {
   return typeMap[ext || ''] || 'text';
 }
 
+async function checkRateLimit(userId: string): Promise<{ allowed: boolean; remainingRequests: number; resetTime: Date }> {
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
+  const windowStart = new Date();
+  windowStart.setHours(windowStart.getHours() - RATE_LIMIT_WINDOW_HOURS);
+
+  // Check current usage in the time window
+  const { data: existingLimits, error } = await supabase
+    .from('edge_function_rate_limits')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('function_name', 'github-scanner')
+    .gte('window_start', windowStart.toISOString())
+    .order('window_start', { ascending: false });
+
+  if (error) {
+    console.error('Rate limit check error:', error);
+    // Allow request if we can't check (fail open)
+    return { allowed: true, remainingRequests: RATE_LIMIT_MAX_REQUESTS, resetTime: new Date() };
+  }
+
+  const totalRequests = existingLimits?.reduce((sum, limit) => sum + limit.request_count, 0) || 0;
+  const allowed = totalRequests < RATE_LIMIT_MAX_REQUESTS;
+  const remainingRequests = Math.max(0, RATE_LIMIT_MAX_REQUESTS - totalRequests);
+  
+  const nextWindow = new Date();
+  nextWindow.setHours(nextWindow.getHours() + 1);
+
+  return { allowed, remainingRequests, resetTime: nextWindow };
+}
+
+async function recordRateLimit(userId: string): Promise<void> {
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
+  const { error } = await supabase
+    .from('edge_function_rate_limits')
+    .insert({
+      user_id: userId,
+      function_name: 'github-scanner',
+      request_count: 1,
+      window_start: new Date().toISOString()
+    });
+
+  if (error) {
+    console.error('Rate limit recording error:', error);
+  }
+}
+
 function calculateSecurityScore(results: ScanResult[]): SecurityScore {
   const typeCount = {
     secret: results.filter(r => r.type === 'secret').length,
@@ -253,6 +312,58 @@ serve(async (req) => {
   }
 
   try {
+    // Get user ID from Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Authentication required'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    // Extract user ID from JWT token
+    const token = authHeader.replace('Bearer ', '');
+    let userId: string;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      userId = payload.sub;
+    } catch (e) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Invalid authentication token'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    // Check rate limit
+    const rateLimitResult = await checkRateLimit(userId);
+    if (!rateLimitResult.allowed) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: `Rate limit exceeded. Maximum ${RATE_LIMIT_MAX_REQUESTS} scans per ${RATE_LIMIT_WINDOW_HOURS} hour(s). Try again at ${rateLimitResult.resetTime.toISOString()}`,
+        rateLimitInfo: {
+          maxRequests: RATE_LIMIT_MAX_REQUESTS,
+          windowHours: RATE_LIMIT_WINDOW_HOURS,
+          remainingRequests: rateLimitResult.remainingRequests,
+          resetTime: rateLimitResult.resetTime.toISOString()
+        }
+      }), {
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'X-RateLimit-Limit': RATE_LIMIT_MAX_REQUESTS.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remainingRequests.toString(),
+          'X-RateLimit-Reset': Math.floor(rateLimitResult.resetTime.getTime() / 1000).toString()
+        },
+        status: 429,
+      });
+    }
+
     const { repoUrl }: ScanRequest = await req.json();
     
     console.log('Starting AI-powered scan for repository:', repoUrl);
@@ -308,6 +419,9 @@ serve(async (req) => {
 
     // Calculate security score
     const securityScore = calculateSecurityScore(allResults);
+
+    // Record successful scan for rate limiting
+    await recordRateLimit(userId);
 
     console.log(`AI scan complete. Found ${allResults.length} issues.`);
 
