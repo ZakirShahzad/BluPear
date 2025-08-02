@@ -65,6 +65,42 @@ export type Database = {
         }
         Relationships: []
       }
+      scan_cache: {
+        Row: {
+          commit_sha: string
+          created_at: string
+          files_scanned: number
+          id: string
+          repo_hash: string
+          results: Json
+          scan_metadata: Json
+          security_score: Json
+          updated_at: string
+        }
+        Insert: {
+          commit_sha: string
+          created_at?: string
+          files_scanned?: number
+          id?: string
+          repo_hash: string
+          results: Json
+          scan_metadata?: Json
+          security_score: Json
+          updated_at?: string
+        }
+        Update: {
+          commit_sha?: string
+          created_at?: string
+          files_scanned?: number
+          id?: string
+          repo_hash?: string
+          results?: Json
+          scan_metadata?: Json
+          security_score?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scan_reports: {
         Row: {
           created_at: string
@@ -119,6 +155,10 @@ export type Database = {
     }
     Functions: {
       cleanup_old_rate_limits: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_old_scan_cache: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
