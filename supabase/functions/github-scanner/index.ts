@@ -29,6 +29,19 @@ interface ScanResult {
   owasp_category?: string;
 }
 
+interface CachedScanResult {
+  repo_hash: string;
+  commit_sha: string;
+  results: ScanResult[];
+  security_score: SecurityScore;
+  files_scanned: number;
+  scan_metadata: {
+    files_analyzed: string[];
+    content_hashes: { [file: string]: string };
+    analysis_timestamp: string;
+  };
+}
+
 interface SecurityScore {
   overall: number;
   secrets: number;
@@ -43,7 +56,16 @@ async function parseGitHubUrl(url: string): Promise<{ owner: string; repo: strin
   return { owner: match[1], repo: match[2].replace('.git', '') };
 }
 
-async function fetchRepositoryFiles(owner: string, repo: string): Promise<any[]> {
+async function fetchRepositoryFiles(owner: string, repo: string): Promise<{ files: any[], commitSha: string }> {
+  // First get the latest commit SHA for caching
+  const commitUrl = `https://api.github.com/repos/${owner}/${repo}/commits/main`;
+  const commitResponse = await fetch(commitUrl);
+  if (!commitResponse.ok) {
+    throw new Error(`GitHub API error: ${commitResponse.status}`);
+  }
+  const commitData = await commitResponse.json();
+  const commitSha = commitData.sha;
+
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/main?recursive=1`;
   
   try {
@@ -53,7 +75,7 @@ async function fetchRepositoryFiles(owner: string, repo: string): Promise<any[]>
     }
     
     const data = await response.json();
-    return data.tree || [];
+    return { files: data.tree || [], commitSha };
   } catch (error) {
     console.error('Error fetching repository:', error);
     throw error;
@@ -80,7 +102,83 @@ async function fetchFileContent(owner: string, repo: string, path: string): Prom
   }
 }
 
-async function analyzeCodeWithAI(content: string, filename: string, fileType: string): Promise<ScanResult[]> {
+// Add result caching functions
+async function getCachedResults(owner: string, repo: string, commitSha: string): Promise<CachedScanResult | null> {
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
+  const repoHash = btoa(`${owner}/${repo}`).replace(/[+=\/]/g, '');
+  
+  const { data, error } = await supabase
+    .from('scan_cache')
+    .select('*')
+    .eq('repo_hash', repoHash)
+    .eq('commit_sha', commitSha)
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data as CachedScanResult;
+}
+
+async function storeCachedResults(owner: string, repo: string, commitSha: string, results: ScanResult[], securityScore: SecurityScore, filesScanned: number, metadata: any): Promise<void> {
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
+  const repoHash = btoa(`${owner}/${repo}`).replace(/[+=\/]/g, '');
+  
+  const { error } = await supabase
+    .from('scan_cache')
+    .upsert({
+      repo_hash: repoHash,
+      commit_sha: commitSha,
+      results,
+      security_score: securityScore,
+      files_scanned: filesScanned,
+      scan_metadata: metadata,
+      created_at: new Date().toISOString()
+    });
+
+  if (error) {
+    console.error('Error caching results:', error);
+  }
+}
+
+// Create content hash for consistency
+function createContentHash(content: string): string {
+  // Simple hash function for content consistency
+  let hash = 0;
+  for (let i = 0; i < content.length; i++) {
+    const char = content.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash).toString(36);
+}
+
+// Deduplicate results based on title, type, and file
+function deduplicateResults(results: ScanResult[]): ScanResult[] {
+  const seen = new Set<string>();
+  const deduplicated: ScanResult[] = [];
+
+  for (const result of results) {
+    const key = `${result.type}-${result.title}-${result.file}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduplicated.push(result);
+    }
+  }
+
+  return deduplicated;
+}
+
+async function analyzeCodeWithAI(content: string, filename: string, fileType: string, retryCount = 0): Promise<ScanResult[]> {
   const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
   if (!openAIApiKey) {
     throw new Error('OpenAI API key not configured');
@@ -147,7 +245,7 @@ REQUIREMENTS:
           { role: 'system', content: 'You are a senior cybersecurity expert specializing in comprehensive vulnerability assessment. Provide detailed, actionable security analysis in JSON format with extensive technical explanations and remediation guidance.' },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.1,
+        temperature: 0, // Set to 0 for maximum determinism
         max_tokens: 4000,
       }),
     });
@@ -161,16 +259,29 @@ REQUIREMENTS:
     
     console.log(`AI response for ${filename}:`, aiResponse);
 
-    // Parse the JSON response
+    // Parse the JSON response with retry logic
     let issues: any[] = [];
     try {
       // Extract JSON if wrapped in markdown
       const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
       const jsonStr = jsonMatch ? jsonMatch[0] : aiResponse;
       issues = JSON.parse(jsonStr);
+      
+      // Validate response format
+      if (!Array.isArray(issues)) {
+        throw new Error('Response is not an array');
+      }
     } catch (parseError) {
       console.error('Failed to parse AI response as JSON:', parseError);
       console.error('Raw response:', aiResponse);
+      
+      // Retry once with more explicit instructions
+      if (retryCount < 1) {
+        console.log('Retrying AI analysis with more explicit instructions...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return analyzeCodeWithAI(content, filename, fileType, retryCount + 1);
+      }
+      
       return [];
     }
 
@@ -278,6 +389,7 @@ async function recordRateLimit(userId: string): Promise<void> {
 }
 
 function calculateSecurityScore(results: ScanResult[]): SecurityScore {
+  // More stable scoring algorithm with logarithmic scaling
   const typeCount = {
     secret: results.filter(r => r.type === 'secret').length,
     vulnerability: results.filter(r => r.type === 'vulnerability').length,
@@ -285,24 +397,31 @@ function calculateSecurityScore(results: ScanResult[]): SecurityScore {
     pattern: results.filter(r => r.type === 'pattern').length,
   };
 
-  const severityWeights = { critical: 30, high: 20, medium: 10, low: 5 };
-  const totalDeductions = results.reduce((sum, result) => sum + severityWeights[result.severity], 0);
+  const severityWeights = { critical: 25, high: 15, medium: 8, low: 3 };
   
-  // Calculate category-specific scores
-  const secrets = Math.max(0, 100 - (typeCount.secret * 25));
-  const vulnerabilities = Math.max(0, 100 - (typeCount.vulnerability * 20));
-  const configurations = Math.max(0, 100 - (typeCount.misconfiguration * 15));
-  const patterns = Math.max(0, 100 - (typeCount.pattern * 10));
+  // Use logarithmic scaling for more stable scores
+  const calculateCategoryScore = (count: number, basePenalty: number) => {
+    if (count === 0) return 100;
+    const penalty = basePenalty * Math.log(1 + count);
+    return Math.max(10, 100 - penalty); // Minimum score of 10
+  };
   
-  // Overall score considers both issue count and severity
-  const overall = Math.max(0, 100 - Math.min(totalDeductions, 100));
+  // Calculate category-specific scores with logarithmic scaling
+  const secrets = calculateCategoryScore(typeCount.secret, 30);
+  const vulnerabilities = calculateCategoryScore(typeCount.vulnerability, 25);
+  const configurations = calculateCategoryScore(typeCount.misconfiguration, 20);
+  const patterns = calculateCategoryScore(typeCount.pattern, 15);
+  
+  // Overall score uses weighted average of severity and count
+  const totalWeightedIssues = results.reduce((sum, result) => sum + severityWeights[result.severity], 0);
+  const overall = Math.max(10, 100 - (totalWeightedIssues * 0.8));
 
   return {
-    overall,
-    secrets,
-    vulnerabilities,
-    configurations,
-    patterns
+    overall: Math.round(overall),
+    secrets: Math.round(secrets),
+    vulnerabilities: Math.round(vulnerabilities),
+    configurations: Math.round(configurations),
+    patterns: Math.round(patterns)
   };
 }
 
@@ -377,33 +496,74 @@ serve(async (req) => {
     const { owner, repo } = repoInfo;
     console.log(`Scanning repository: ${owner}/${repo}`);
 
-    // Fetch repository structure
-    const files = await fetchRepositoryFiles(owner, repo);
+    // Fetch repository structure and commit SHA
+    const { files, commitSha } = await fetchRepositoryFiles(owner, repo);
     
-    // Filter and prioritize files to scan
+    // Check for cached results first
+    const cachedResults = await getCachedResults(owner, repo, commitSha);
+    if (cachedResults) {
+      console.log('Returning cached results for repository:', `${owner}/${repo}`, 'commit:', commitSha);
+      
+      await recordRateLimit(userId);
+      
+      return new Response(JSON.stringify({
+        success: true,
+        results: cachedResults.results,
+        securityScore: cachedResults.security_score,
+        filesScanned: cachedResults.files_scanned,
+        repository: `${owner}/${repo}`,
+        analysisMethod: 'AI-Powered (Cached)',
+        commitSha,
+        scanMetadata: cachedResults.scan_metadata
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+    
+    // Filter and prioritize files to scan with deterministic sorting
     const codeFiles = files.filter(file => 
       file.type === 'blob' && 
       /\.(js|ts|jsx|tsx|py|java|php|rb|go|rs|cpp|c|h|cs|swift|kt|scala|json|yaml|yml|env|config)$/i.test(file.path) &&
       file.size < 500000 // Skip files larger than 500KB
     )
     .sort((a, b) => {
-      // Prioritize sensitive files
-      const sensitivePatterns = ['config', 'env', 'secret', 'key', 'auth', 'security'];
-      const aScore = sensitivePatterns.some(p => a.path.toLowerCase().includes(p)) ? 1 : 0;
-      const bScore = sensitivePatterns.some(p => b.path.toLowerCase().includes(p)) ? 1 : 0;
-      return bScore - aScore;
+      // Deterministic sorting: first by sensitivity score, then by path
+      const sensitivePatterns = ['config', 'env', 'secret', 'key', 'auth', 'security', 'password', 'token'];
+      const getSensitivityScore = (path: string) => {
+        const lowerPath = path.toLowerCase();
+        return sensitivePatterns.reduce((score, pattern) => {
+          return lowerPath.includes(pattern) ? score + 1 : score;
+        }, 0);
+      };
+      
+      const aScore = getSensitivityScore(a.path);
+      const bScore = getSensitivityScore(b.path);
+      
+      if (aScore !== bScore) {
+        return bScore - aScore; // Higher sensitivity first
+      }
+      
+      // Secondary sort by path for deterministic ordering
+      return a.path.localeCompare(b.path);
     })
     .slice(0, 25); // Limit to 25 files for API cost management
 
     console.log(`Found ${codeFiles.length} code files to analyze with AI`);
 
     const allResults: ScanResult[] = [];
+    const contentHashes: { [file: string]: string } = {};
+    const filesAnalyzed: string[] = [];
 
     // Analyze each file with AI
     for (const file of codeFiles) {
       try {
         const content = await fetchFileContent(owner, repo, file.path);
         if (content.length > 0) {
+          const contentHash = createContentHash(content);
+          contentHashes[file.path] = contentHash;
+          filesAnalyzed.push(file.path);
+          
           const fileType = getFileType(file.path);
           const fileResults = await analyzeCodeWithAI(content, file.path, fileType);
           allResults.push(...fileResults);
@@ -417,21 +577,37 @@ serve(async (req) => {
       }
     }
 
-    // Calculate security score
-    const securityScore = calculateSecurityScore(allResults);
+    // Deduplicate results to remove duplicates
+    const deduplicatedResults = deduplicateResults(allResults);
+
+    // Calculate security score with deduplicated results
+    const securityScore = calculateSecurityScore(deduplicatedResults);
+
+    // Create scan metadata
+    const scanMetadata = {
+      files_analyzed: filesAnalyzed,
+      content_hashes: contentHashes,
+      analysis_timestamp: new Date().toISOString()
+    };
+
+    // Cache the results for future use
+    await storeCachedResults(owner, repo, commitSha, deduplicatedResults, securityScore, codeFiles.length, scanMetadata);
 
     // Record successful scan for rate limiting
     await recordRateLimit(userId);
 
-    console.log(`AI scan complete. Found ${allResults.length} issues.`);
+    console.log(`AI scan complete. Found ${deduplicatedResults.length} unique issues (${allResults.length} before deduplication).`);
 
     return new Response(JSON.stringify({
       success: true,
-      results: allResults,
+      results: deduplicatedResults,
       securityScore,
       filesScanned: codeFiles.length,
       repository: `${owner}/${repo}`,
-      analysisMethod: 'AI-Powered'
+      analysisMethod: 'AI-Powered',
+      commitSha,
+      scanMetadata,
+      issuesBeforeDeduplication: allResults.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
