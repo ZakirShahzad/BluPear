@@ -152,23 +152,21 @@ export const SecurityScanner = () => {
 
     try {
       // Start the actual scan
-      const scanPromise = supabase.functions.invoke('github-scanner', {
+      const { data, error } = await supabase.functions.invoke('github-scanner', {
         body: { repoUrl: repoUrl.trim() }
       });
 
-      // Update progress while scanning
-      for (const step of progressSteps) {
-        await new Promise(resolve => setTimeout(resolve, 800));
-        setScanProgress(step.progress);
-        
-        toast({
-          title: "Scanning Progress",
-          description: step.message
+      // Update progress during scan
+      const progressInterval = setInterval(() => {
+        setScanProgress(prev => {
+          const newProgress = Math.min(prev + 5, 95);
+          return newProgress;
         });
-      }
+      }, 1000);
 
-      // Wait for scan to complete
-      const { data, error } = await scanPromise;
+      // Clear interval when scan completes
+      clearInterval(progressInterval);
+      setScanProgress(100);
 
       if (error) {
         throw new Error(error.message || 'Scan failed');
