@@ -317,35 +317,73 @@ export const SecurityScanner = () => {
               Security Issues ({results.length})
             </h3>
             
-            <div className="space-y-3">
+            <div className="space-y-6">
               {results.map((result) => (
-                <div key={result.id} className="border border-border/50 rounded-lg p-4 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      {getSeverityIcon(result.severity)}
-                      {getTypeIcon(result.type)}
-                      <div>
-                        <h4 className="font-medium">{result.title}</h4>
-                        <p className="text-sm text-muted-foreground">{result.description}</p>
+                <Card key={result.id} className="border-border/50 bg-background/30 overflow-hidden">
+                  <div className="p-6">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="flex-shrink-0">
+                        {getSeverityIcon(result.severity)}
+                      </div>
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <Badge variant={result.severity === 'critical' || result.severity === 'high' ? 'destructive' : result.severity === 'medium' ? 'secondary' : 'outline'} className="text-xs font-medium">
+                            {result.severity.toUpperCase()}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            {getTypeIcon(result.type)} {result.type.toUpperCase()}
+                          </span>
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-semibold text-foreground text-lg mb-2">{result.title}</h4>
+                          <p className="text-muted-foreground leading-relaxed">{result.description}</p>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 text-sm">
+                          <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-md">
+                            <span className="text-muted-foreground">📁</span>
+                            <span className="font-mono text-foreground">{result.file}</span>
+                          </div>
+                          {result.line && (
+                            <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-md">
+                              <span className="text-muted-foreground">📍</span>
+                              <span className="text-foreground">Line {result.line}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <Badge variant={result.severity === 'critical' ? 'destructive' : 'secondary'}>
-                      {result.severity}
-                    </Badge>
+                    
+                    {result.suggestion && (
+                      <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border-l-4 border-primary">
+                        <h5 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                          <span className="text-primary">💡</span>
+                          Fix Recommendations
+                        </h5>
+                        <div className="space-y-2">
+                          {result.suggestion.split('.').filter(Boolean).map((item, idx) => (
+                            <div key={idx} className="flex items-start gap-2">
+                              <span className="text-primary text-xs mt-1">•</span>
+                              <span className="text-sm text-muted-foreground leading-relaxed">{item.trim()}</span>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {result.line && (
+                          <div className="mt-4 pt-3 border-t border-border/30">
+                            <p className="text-xs text-muted-foreground mb-2">Vulnerable Code Location:</p>
+                            <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
+                              <p className="text-sm font-mono text-foreground">
+                                <span className="text-muted-foreground">Line {result.line}:</span> Review and apply security fixes at this location
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  
-                  <div className="text-sm text-muted-foreground">
-                    <span className="font-mono">{result.file}</span>
-                    {result.line && <span className="ml-1">line {result.line}</span>}
-                  </div>
-                  
-                  {result.suggestion && (
-                    <div className="bg-muted/50 p-3 rounded border border-border/30">
-                      <h5 className="text-sm font-medium text-primary mb-1">Recommendation:</h5>
-                      <p className="text-sm text-muted-foreground">{result.suggestion}</p>
-                    </div>
-                  )}
-                </div>
+                </Card>
               ))}
             </div>
           </div>
