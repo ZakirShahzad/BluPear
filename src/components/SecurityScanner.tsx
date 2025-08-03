@@ -371,13 +371,46 @@ export const SecurityScanner = () => {
                           <span className="text-primary">💡</span>
                           Fix Recommendations
                         </h5>
-                        <div className="space-y-2">
-                          {result.suggestion.split('.').filter(Boolean).map((item, idx) => (
-                            <div key={idx} className="flex items-start gap-2">
-                              <span className="text-primary text-sm font-medium">{idx + 1}.</span>
-                              <span className="text-sm text-muted-foreground leading-relaxed">{item.trim()}</span>
-                            </div>
-                          ))}
+                        <div className="space-y-3">
+                          {result.suggestion.split(/(\d+\)\s)/).filter(Boolean).map((item, idx) => {
+                            const isNumberedItem = /^\d+\)\s/.test(item);
+                            if (isNumberedItem) return null;
+                            
+                            const prevItem = result.suggestion.split(/(\d+\)\s)/)[idx - 1];
+                            const itemNumber = prevItem?.match(/(\d+)\)/)?.[1];
+                            
+                            // Check if item contains code (backticks or common code patterns)
+                            const hasCode = item.includes('`') || /supabase|process\.env|crypto\.|Math\.|const |let |var |function/.test(item);
+                            
+                            if (hasCode) {
+                              // Split text and code
+                              const parts = item.split(/(`[^`]+`)/);
+                              return (
+                                <div key={idx} className="flex items-start gap-2">
+                                  {itemNumber && <span className="text-primary text-sm font-medium">{itemNumber}.</span>}
+                                  <div className="text-sm text-muted-foreground leading-relaxed">
+                                    {parts.map((part, partIdx) => {
+                                      if (part.startsWith('`') && part.endsWith('`')) {
+                                        return (
+                                          <code key={partIdx} className="bg-muted/50 px-1.5 py-0.5 rounded text-xs font-mono text-foreground">
+                                            {part.slice(1, -1)}
+                                          </code>
+                                        );
+                                      }
+                                      return <span key={partIdx}>{part}</span>;
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            }
+                            
+                            return (
+                              <div key={idx} className="flex items-start gap-2">
+                                {itemNumber && <span className="text-primary text-sm font-medium">{itemNumber}.</span>}
+                                <span className="text-sm text-muted-foreground leading-relaxed">{item.trim()}</span>
+                              </div>
+                            );
+                          })}
                         </div>
                         
                         {(result.vulnerableCode || result.fixedCode) && (
