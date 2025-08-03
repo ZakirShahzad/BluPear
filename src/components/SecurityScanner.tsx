@@ -32,6 +32,8 @@ interface ScanResult {
   file: string;
   line?: number;
   suggestion?: string;
+  vulnerableCode?: string;
+  fixedCode?: string;
 }
 
 interface SecurityScore {
@@ -72,7 +74,9 @@ export const SecurityScanner = () => {
       description: "Hardcoded API key found in source code",
       file: "src/config/api.js",
       line: 12,
-      suggestion: "Move API keys to environment variables and use proper secret management"
+      suggestion: "Move API keys to environment variables and use proper secret management. Remove the hardcoded key from source code. Use process.env variables instead",
+      vulnerableCode: "const apiKey = 'sk-proj-abc123def456ghi789jkl';",
+      fixedCode: "const apiKey = process.env.OPENAI_API_KEY;"
     },
     {
       id: "2", 
@@ -81,7 +85,9 @@ export const SecurityScanner = () => {
       title: "Vulnerable lodash version",
       description: "Using lodash@4.17.15 with known security vulnerabilities",
       file: "package.json",
-      suggestion: "Update to lodash@4.17.21 or higher"
+      suggestion: "Update to lodash@4.17.21 or higher. Run npm update lodash to fix this issue",
+      vulnerableCode: '"lodash": "^4.17.15"',
+      fixedCode: '"lodash": "^4.17.21"'
     },
     {
       id: "3",
@@ -91,7 +97,9 @@ export const SecurityScanner = () => {
       description: "Application is running with debug flags in production build",
       file: "webpack.config.js",
       line: 45,
-      suggestion: "Disable debug mode for production builds"
+      suggestion: "Disable debug mode for production builds. Change the debug flag to false. Add environment-based configuration",
+      vulnerableCode: "debug: true,",
+      fixedCode: "debug: process.env.NODE_ENV !== 'production',"
     },
     {
       id: "4",
@@ -101,7 +109,9 @@ export const SecurityScanner = () => {
       description: "Using Math.random() for security-sensitive operations",
       file: "src/utils/token.js",
       line: 8,
-      suggestion: "Use crypto.getRandomValues() for cryptographic randomness"
+      suggestion: "Use crypto.getRandomValues() for cryptographic randomness. Replace Math.random() with secure random generation. Import the crypto module for secure operations",
+      vulnerableCode: "const token = Math.random().toString(36);",
+      fixedCode: "const array = new Uint32Array(1); crypto.getRandomValues(array); const token = array[0].toString(36);"
     }
   ];
 
@@ -364,20 +374,33 @@ export const SecurityScanner = () => {
                         <div className="space-y-2">
                           {result.suggestion.split('.').filter(Boolean).map((item, idx) => (
                             <div key={idx} className="flex items-start gap-2">
-                              <span className="text-primary text-xs mt-1">•</span>
+                              <span className="text-primary text-sm font-medium">{idx + 1}.</span>
                               <span className="text-sm text-muted-foreground leading-relaxed">{item.trim()}</span>
                             </div>
                           ))}
                         </div>
                         
-                        {result.line && (
-                          <div className="mt-4 pt-3 border-t border-border/30">
-                            <p className="text-xs text-muted-foreground mb-2">Vulnerable Code Location:</p>
-                            <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
-                              <p className="text-sm font-mono text-foreground">
-                                <span className="text-muted-foreground">Line {result.line}:</span> Review and apply security fixes at this location
-                              </p>
-                            </div>
+                        {(result.vulnerableCode || result.fixedCode) && (
+                          <div className="mt-4 pt-3 border-t border-border/30 space-y-3">
+                            {result.vulnerableCode && (
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-2">
+                                  {result.line ? `Vulnerable code at line ${result.line}:` : 'Current vulnerable code:'}
+                                </p>
+                                <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
+                                  <code className="text-sm font-mono text-foreground block">{result.vulnerableCode}</code>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {result.fixedCode && (
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-2">Secure replacement:</p>
+                                <div className="bg-success/10 border border-success/20 rounded-md p-3">
+                                  <code className="text-sm font-mono text-foreground block">{result.fixedCode}</code>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
