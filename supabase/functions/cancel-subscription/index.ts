@@ -74,9 +74,10 @@ serve(async (req) => {
       email: user.email,
       user_id: user.id,
       stripe_customer_id: customerId,
-      subscribed: false,
-      subscription_tier: null,
+      subscribed: true, // Keep as true until period ends
+      subscription_tier: subscription.items.data[0].price.nickname || "Pro", // Keep current tier
       subscription_end: new Date(canceledSubscription.current_period_end * 1000).toISOString(),
+      subscription_cancelled: true, // Add this field to track cancellation
       updated_at: new Date().toISOString(),
     }, { onConflict: 'email' });
 
