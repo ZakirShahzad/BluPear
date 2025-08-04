@@ -137,7 +137,7 @@ export const HeroSection = () => {
           </div>
 
           {/* Trust Indicators */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-8">
+          <div className="flex flex-wrap justify-center gap-8 pt-8">
             <div className="text-center">
               <div className="text-3xl font-bold text-primary">AI-Powered</div>
               <div className="text-sm text-muted-foreground">Advanced Analysis</div>
@@ -154,12 +154,6 @@ export const HeroSection = () => {
         </div>
       </div>
 
-      {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-        <div className="w-6 h-10 border-2 border-primary/50 rounded-full flex justify-center">
-          <div className="w-1 h-3 bg-primary rounded-full mt-2 animate-pulse"></div>
-        </div>
-      </div>
     </div>
   );
 };
