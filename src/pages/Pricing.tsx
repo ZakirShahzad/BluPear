@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Check, Star, Users, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 const Pricing = () => {
   const {
     user,
@@ -155,6 +156,33 @@ const Pricing = () => {
       });
     }
   };
+
+  const handleCancelSubscription = async () => {
+    if (!session) return;
+    try {
+      const { data, error } = await supabase.functions.invoke('cancel-subscription', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+      if (error) throw error;
+
+      toast({
+        title: "Subscription Canceled",
+        description: data.message || "Your subscription has been canceled. You'll retain access until the end of your billing period."
+      });
+      
+      // Refresh subscription status
+      refreshSubscription();
+    } catch (error) {
+      console.error('Error canceling subscription:', error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel subscription. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
   return <PageTransition>
       <div className="min-h-screen bg-background">
         <Header />
@@ -175,6 +203,33 @@ const Pricing = () => {
                 {subscriptionInfo.subscription_end && <p className="text-sm text-muted-foreground mt-2">
                     Next billing: {new Date(subscriptionInfo.subscription_end).toLocaleDateString()}
                   </p>}
+                <div className="flex gap-2 mt-4 justify-center">
+                  <Button variant="outline" size="sm" onClick={handleManageSubscription}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Manage Subscription
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm">
+                        Cancel Subscription
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to cancel your subscription? You'll retain access to your current plan until the end of your billing period, after which you'll be moved to the Trial Tier with 5 scans per month.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCancelSubscription} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Yes, Cancel Subscription
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>}
           </div>
 
