@@ -6,6 +6,7 @@ interface SubscriptionInfo {
   subscribed: boolean;
   subscription_tier?: string;
   subscription_end?: string;
+  subscription_cancelled?: boolean;
 }
 
 interface ScanUsageInfo {

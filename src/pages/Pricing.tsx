@@ -199,34 +199,43 @@ const Pricing = () => {
                   <Badge variant="secondary" className="bg-primary/20 text-primary">
                     Current Plan: {subscriptionInfo.subscription_tier}
                   </Badge>
-                  
+                  {subscriptionInfo.subscription_cancelled && <Badge variant="destructive" className="bg-orange-600/20 text-orange-600">
+                      Cancelling at period end
+                    </Badge>}
                 </div>
                 {subscriptionInfo.subscription_end && <p className="text-sm text-muted-foreground mt-2">
-                    Next billing: {new Date(subscriptionInfo.subscription_end).toLocaleDateString()}
+                    {subscriptionInfo.subscription_cancelled 
+                      ? `Access ends: ${new Date(subscriptionInfo.subscription_end).toLocaleDateString()}`
+                      : `Next billing: ${new Date(subscriptionInfo.subscription_end).toLocaleDateString()}`
+                    }
                   </p>}
                 <div className="flex gap-2 mt-4 justify-center">
-                  
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm">
-                        Cancel Subscription
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to cancel your subscription? You'll retain access to your current plan until the end of your billing period, after which you'll be moved to the Trial Tier with 5 scans per month.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCancelSubscription} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                          Yes, Cancel Subscription
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  {!subscriptionInfo.subscription_cancelled && <>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm">
+                            Cancel Subscription
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to cancel your subscription? You'll retain access to your current plan until the end of your billing period, after which you'll be moved to the Trial Tier with 5 scans per month.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleCancelSubscription} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                              Yes, Cancel Subscription
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </>}
+                  {subscriptionInfo.subscription_cancelled && <p className="text-sm text-orange-600 font-medium">
+                      Your subscription will not renew and you'll be moved to the Trial Tier after {new Date(subscriptionInfo.subscription_end).toLocaleDateString()}.
+                    </p>}
                 </div>
               </div>}
           </div>
