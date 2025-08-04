@@ -587,6 +587,26 @@ serve(async (req) => {
       
       await recordRateLimit(userId);
       
+      // Increment scan count for cached results too
+      try {
+        const supabase = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        );
+        
+        const { error: incrementError } = await supabase.rpc('increment_scan_count', {
+          p_user_id: userId
+        });
+        
+        if (incrementError) {
+          console.error('Error incrementing scan count for cached result:', incrementError);
+        } else {
+          console.log('Scan count incremented successfully for cached result, user:', userId);
+        }
+      } catch (incrementErr) {
+        console.error('Failed to increment scan count for cached result:', incrementErr);
+      }
+      
       return new Response(JSON.stringify({
         success: true,
         results: cachedResults.results,
