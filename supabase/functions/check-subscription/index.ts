@@ -49,19 +49,19 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
     if (customers.data.length === 0) {
-      logStep("No customer found, user is on free tier");
+      logStep("No customer found, user is on trial tier");
       await supabaseClient.from("subscribers").upsert({
         email: user.email,
         user_id: user.id,
         stripe_customer_id: null,
         subscribed: false,
-        subscription_tier: "Free",
+        subscription_tier: "Trial Tier",
         subscription_end: null,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'email' });
       return new Response(JSON.stringify({ 
         subscribed: false, 
-        subscription_tier: "Free",
+        subscription_tier: "Trial Tier",
         subscription_end: null 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

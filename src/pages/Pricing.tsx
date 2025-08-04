@@ -22,7 +22,7 @@ const Pricing = () => {
   };
 
   const pricingTiers = [{
-    name: "Free",
+    name: "Trial Tier",
     price: 0,
     description: "Perfect for getting started with security scanning",
     icon: <Star className="h-6 w-6" />,
@@ -33,18 +33,18 @@ const Pricing = () => {
   }, {
     name: "Pro",
     price: 9.99,
-    description: "For developers who need unlimited scanning",
+    description: "For developers who need regular scanning",
     icon: <Users className="h-6 w-6" />,
-    features: ["Unlimited scans", "Advanced security detection", "Priority support", "Detailed reports"],
+    features: ["25 scans/month", "Advanced security detection", "Priority support", "Detailed reports"],
     buttonText: "Upgrade to Pro",
     popular: true,
     isFree: false
   }, {
     name: "Team",
     price: 29.99,
-    description: "For teams that want advanced collaboration features",
+    description: "For teams that want unlimited scanning",
     icon: <Users className="h-6 w-6" />,
-    features: ["Unlimited scans", "Team collaboration", "Advanced analytics", "Premium support"],
+    features: ["Unlimited scans", "Advanced security detection", "Priority support", "Detailed reports"],
     buttonText: "Upgrade to Team",
     popular: false,
     isFree: false
@@ -72,10 +72,10 @@ const Pricing = () => {
       return;
     }
 
-    // Handle free tier
-    if (tierName === "Free") {
+    // Handle trial tier
+    if (tierName === "Trial Tier") {
       toast({
-        title: "Welcome to the Free Plan!",
+        title: "Welcome to the Trial Tier!",
         description: "You now have 5 free scans per month. Start scanning your repositories!",
       });
       navigate('/scanner');
@@ -211,7 +211,7 @@ const Pricing = () => {
                   <CardTitle className="text-2xl font-bold">{tier.name}</CardTitle>
                    <div className="flex items-baseline justify-center">
                      {tier.price === 0 ? (
-                       <span className="text-4xl font-bold">Free</span>
+                       <span className="text-4xl font-bold">Trial</span>
                      ) : (
                        <>
                          <span className="text-4xl font-bold">${tier.price}</span>
@@ -268,15 +268,15 @@ const Pricing = () => {
                 </p>
               </div>
               <div className="text-left">
-                <h3 className="font-semibold mb-2">What happens if I exceed my free scan limit?</h3>
+                <h3 className="font-semibold mb-2">What happens if I exceed my scan limit?</h3>
                 <p className="text-muted-foreground text-sm">
-                  Free users get 5 scans per month. After that, you'll need to upgrade to a paid plan for unlimited scanning.
+                  Trial users get 5 scans/month, Pro users get 25 scans/month. After that, you'll need to upgrade for more scans.
                 </p>
               </div>
               <div className="text-left">
-                <h3 className="font-semibold mb-2">Do paid plans have scan limits?</h3>
+                <h3 className="font-semibold mb-2">Which plans have unlimited scans?</h3>
                 <p className="text-muted-foreground text-sm">
-                  No! Both Pro and Team plans include unlimited scans with no monthly restrictions.
+                  Only the Team plan includes unlimited scans with no monthly restrictions.
                 </p>
               </div>
             </div>

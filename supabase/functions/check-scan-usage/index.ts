@@ -40,6 +40,27 @@ serve(async (req) => {
     if (!user?.id) throw new Error("User not authenticated");
     logStep("User authenticated", { userId: user.id });
 
+    // Get user's subscription info to determine scan limit
+    const { data: subscriptionData, error: subscriptionError } = await supabaseClient
+      .from('subscribers')
+      .select('subscription_tier, subscribed')
+      .eq('user_id', user.id)
+      .single();
+
+    if (subscriptionError && subscriptionError.code !== 'PGRST116') {
+      throw subscriptionError;
+    }
+
+    // Determine scan limit based on subscription tier
+    let scanLimit = 5; // Default for Trial Tier
+    const subscriptionTier = subscriptionData?.subscription_tier || "Trial Tier";
+    
+    if (subscriptionTier === "Pro") {
+      scanLimit = 25;
+    } else if (subscriptionTier === "Team") {
+      scanLimit = -1; // Unlimited
+    }
+
     // Get current month's scan usage
     const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM format
     const { data: scanUsage, error: usageError } = await supabaseClient
@@ -54,13 +75,15 @@ serve(async (req) => {
     }
 
     const currentScans = scanUsage?.scan_count || 0;
-    logStep("Retrieved scan usage", { currentMonth, currentScans });
+    const canScan = scanLimit === -1 ? true : currentScans < scanLimit; // Unlimited or under limit
+    logStep("Retrieved scan usage", { currentMonth, currentScans, scanLimit, subscriptionTier, canScan });
 
     return new Response(JSON.stringify({
       current_scans: currentScans,
-      scan_limit: 5, // Free tier limit
-      can_scan: currentScans < 5,
-      month_year: currentMonth
+      scan_limit: scanLimit,
+      can_scan: canScan,
+      month_year: currentMonth,
+      subscription_tier: subscriptionTier
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
