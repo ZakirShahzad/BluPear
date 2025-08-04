@@ -27,6 +27,8 @@ interface ScanResult {
   impact?: string;
   cwe_reference?: string;
   owasp_category?: string;
+  sanitized?: boolean;
+  sensitive_data_types?: string[];
 }
 
 interface CachedScanResult {
@@ -148,6 +150,86 @@ async function storeCachedResults(owner: string, repo: string, commitSha: string
   if (error) {
     console.error('Error caching results:', error);
   }
+}
+
+// Sanitization patterns for sensitive data
+const SENSITIVE_PATTERNS = {
+  api_keys: [
+    /['"]((?:sk|pk)_[a-zA-Z0-9]{20,})['"]/gi,
+    /['"](AKIA[0-9A-Z]{16})['"]/gi,
+    /['"](ya29\.[0-9A-Za-z\-_]{68})['"]/gi,
+    /['"](AIza[0-9A-Za-z\-_]{35})['"]/gi,
+    /['"](xox[baprs]-[0-9]{10,12}-[0-9]{10,12}-[0-9a-zA-Z]{24})['"]/gi
+  ],
+  passwords: [
+    /password\s*[:=]\s*['"]([^'"]{8,})['"]?/gi,
+    /pwd\s*[:=]\s*['"]([^'"]{8,})['"]?/gi,
+    /pass\s*[:=]\s*['"]([^'"]{8,})['"]?/gi
+  ],
+  tokens: [
+    /['"](ghp_[a-zA-Z0-9]{36})['"]/gi,
+    /['"](gho_[a-zA-Z0-9]{36})['"]/gi,
+    /['"](github_pat_[a-zA-Z0-9_]{82})['"]/gi,
+    /bearer\s+([a-zA-Z0-9\-_.~+/]+=*)/gi
+  ],
+  emails: [
+    /[\w\.-]+@[\w\.-]+\.\w+/gi
+  ],
+  database_urls: [
+    /(mongodb|mysql|postgresql|postgres):\/\/[^\s'"]+/gi,
+    /database_url\s*[:=]\s*['"]([^'"]+)['"]?/gi
+  ],
+  private_keys: [
+    /-----BEGIN\s+(RSA\s+|EC\s+|DSA\s+)?PRIVATE\s+KEY-----[\s\S]*?-----END\s+(RSA\s+|EC\s+|DSA\s+)?PRIVATE\s+KEY-----/gi,
+    /-----BEGIN\s+OPENSSH\s+PRIVATE\s+KEY-----[\s\S]*?-----END\s+OPENSSH\s+PRIVATE\s+KEY-----/gi
+  ]
+};
+
+// Sanitize sensitive data from content
+function sanitizeContent(content: string): { sanitized: string; detectedTypes: string[] } {
+  let sanitized = content;
+  const detectedTypes: string[] = [];
+
+  for (const [type, patterns] of Object.entries(SENSITIVE_PATTERNS)) {
+    for (const pattern of patterns) {
+      if (pattern.test(content)) {
+        detectedTypes.push(type);
+        sanitized = sanitized.replace(pattern, (match, ...groups) => {
+          // For patterns with capture groups, replace the sensitive part
+          if (groups.length > 0 && groups[0]) {
+            const sensitiveValue = groups[0];
+            const replacement = '[REDACTED_' + type.toUpperCase() + '_' + sensitiveValue.length + '_CHARS]';
+            return match.replace(sensitiveValue, replacement);
+          }
+          // For full matches, replace with a generic placeholder
+          return '[REDACTED_' + type.toUpperCase() + ']';
+        });
+      }
+    }
+  }
+
+  return { sanitized, detectedTypes };
+}
+
+// Sanitize scan results to remove sensitive data
+function sanitizeScanResults(results: ScanResult[]): ScanResult[] {
+  return results.map(result => {
+    const { sanitized: sanitizedDescription, detectedTypes: descTypes } = sanitizeContent(result.description);
+    const { sanitized: sanitizedSuggestion, detectedTypes: suggTypes } = sanitizeContent(result.suggestion || '');
+    const { sanitized: sanitizedImpact, detectedTypes: impactTypes } = sanitizeContent(result.impact || '');
+    
+    const allDetectedTypes = [...new Set([...descTypes, ...suggTypes, ...impactTypes])];
+    const wasSanitized = allDetectedTypes.length > 0;
+
+    return {
+      ...result,
+      description: sanitizedDescription,
+      suggestion: sanitizedSuggestion,
+      impact: sanitizedImpact,
+      sanitized: wasSanitized,
+      sensitive_data_types: wasSanitized ? allDetectedTypes : undefined
+    };
+  });
 }
 
 // Create content hash for consistency
@@ -558,14 +640,17 @@ serve(async (req) => {
     // Analyze each file with AI
     for (const file of codeFiles) {
       try {
-        const content = await fetchFileContent(owner, repo, file.path);
+        let content = await fetchFileContent(owner, repo, file.path);
         if (content.length > 0) {
           const contentHash = createContentHash(content);
           contentHashes[file.path] = contentHash;
           filesAnalyzed.push(file.path);
           
+          // Sanitize content before AI analysis to prevent sensitive data from being sent to OpenAI
+          const { sanitized: sanitizedContent } = sanitizeContent(content);
+          
           const fileType = getFileType(file.path);
-          const fileResults = await analyzeCodeWithAI(content, file.path, fileType);
+          const fileResults = await analyzeCodeWithAI(sanitizedContent, file.path, fileType);
           allResults.push(...fileResults);
           
           // Small delay to respect rate limits
@@ -580,8 +665,11 @@ serve(async (req) => {
     // Deduplicate results to remove duplicates
     const deduplicatedResults = deduplicateResults(allResults);
 
-    // Calculate security score with deduplicated results
-    const securityScore = calculateSecurityScore(deduplicatedResults);
+    // Sanitize scan results before storage and response
+    const sanitizedResults = sanitizeScanResults(deduplicatedResults);
+
+    // Calculate security score with sanitized results
+    const securityScore = calculateSecurityScore(sanitizedResults);
 
     // Create scan metadata
     const scanMetadata = {
@@ -590,24 +678,28 @@ serve(async (req) => {
       analysis_timestamp: new Date().toISOString()
     };
 
-    // Cache the results for future use
-    await storeCachedResults(owner, repo, commitSha, deduplicatedResults, securityScore, codeFiles.length, scanMetadata);
+    // Cache the sanitized results for future use
+    await storeCachedResults(owner, repo, commitSha, sanitizedResults, securityScore, codeFiles.length, scanMetadata);
 
     // Record successful scan for rate limiting
     await recordRateLimit(userId);
 
-    console.log(`AI scan complete. Found ${deduplicatedResults.length} unique issues (${allResults.length} before deduplication).`);
+    // Count how many results were sanitized
+    const sanitizedCount = sanitizedResults.filter(r => r.sanitized).length;
+    
+    console.log(`AI scan complete. Found ${sanitizedResults.length} unique issues (${allResults.length} before deduplication). ${sanitizedCount} results had sensitive data sanitized.`);
 
     return new Response(JSON.stringify({
       success: true,
-      results: deduplicatedResults,
+      results: sanitizedResults,
       securityScore,
       filesScanned: codeFiles.length,
       repository: `${owner}/${repo}`,
       analysisMethod: 'AI-Powered',
       commitSha,
       scanMetadata,
-      issuesBeforeDeduplication: allResults.length
+      issuesBeforeDeduplication: allResults.length,
+      sanitizedIssues: sanitizedCount
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
