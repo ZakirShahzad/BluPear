@@ -111,7 +111,9 @@ export type Database = {
           medium_issues: number
           repository_name: string
           repository_url: string
+          sanitized_issues: number | null
           scan_results: Json
+          scan_type: string | null
           security_score: number
           total_issues: number
           updated_at: string
@@ -126,7 +128,9 @@ export type Database = {
           medium_issues: number
           repository_name: string
           repository_url: string
+          sanitized_issues?: number | null
           scan_results: Json
+          scan_type?: string | null
           security_score: number
           total_issues: number
           updated_at?: string
@@ -141,11 +145,85 @@ export type Database = {
           medium_issues?: number
           repository_name?: string
           repository_url?: string
+          sanitized_issues?: number | null
           scan_results?: Json
+          scan_type?: string | null
           security_score?: number
           total_issues?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      security_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          resource_id: string | null
+          resource_type: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          stripe_customer_id: string | null
+          subscribed: boolean
+          subscription_end: string | null
+          subscription_tier: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -161,6 +239,18 @@ export type Database = {
       cleanup_old_scan_cache: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      log_security_event: {
+        Args: {
+          p_user_id: string
+          p_action: string
+          p_resource_type: string
+          p_resource_id?: string
+          p_details?: Json
+          p_ip_address?: unknown
+          p_user_agent?: string
+        }
+        Returns: string
       }
     }
     Enums: {
