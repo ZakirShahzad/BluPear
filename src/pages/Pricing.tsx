@@ -213,8 +213,8 @@ const Pricing = () => {
                   {!subscriptionInfo.subscription_cancelled && <>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="sm">
-                            Cancel Subscription
+                      <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                        Cancel Subscription
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
