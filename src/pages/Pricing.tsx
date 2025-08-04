@@ -10,24 +10,32 @@ const Pricing = () => {
     price: 0,
     description: "For indie devs testing BluPear or securing a side project",
     icon: <Zap className="h-6 w-6" />,
-    features: ["5 scans/month", "Public GitHub repos only", "Secret detection (API keys, tokens, .env files)", "Basic security score", "Manual scan only"],
+    features: ["5 scans/month", "Secret detection", "Basic security score"],
     buttonText: "Get Started Free",
     popular: false
   }, {
     name: "Solo Developer",
-    price: 9,
+    price: 9.99,
     description: "For indie devs who want to stay secure across multiple projects",
     icon: <Star className="h-6 w-6" />,
-    features: ["25 scans/month", "Private repo support", "Secret detection + config missteps (debug flags, Firebase)", "Downloadable scan report (PDF/Markdown)", "GPT-powered risk explanation (up to 3 per scan)", "GitHub PR auto-scan (optional)"],
-    buttonText: "Start Pro Trial",
+    features: ["25 scans/month", "Secret detection", "Security score"],
+    buttonText: "Start Trial",
+    popular: false
+  }, {
+    name: "Professional",
+    price: 19.99,
+    description: "For developers with more frequent scanning needs",
+    icon: <Users className="h-6 w-6" />,
+    features: ["50 scans/month", "Secret detection", "Security score"],
+    buttonText: "Start Trial",
     popular: true
   }, {
     name: "Startup",
-    price: 29,
-    description: "For lean teams that want ongoing visibility across repos",
+    price: 29.99,
+    description: "For teams that want ongoing visibility across repos",
     icon: <Users className="h-6 w-6" />,
-    features: ["100 scans/month (shared across team)", "Up to 3 team members", "GitHub App auto-scan on push/PR", "Email alerts for high-severity issues", "GPT-powered suggestions (up to 10 per scan)", "Scan logs & score tracking"],
-    buttonText: "Start Team Trial",
+    features: ["100 scans/month", "Secret detection", "Security score"],
+    buttonText: "Start Trial",
     popular: false
   }];
   return <PageTransition>
@@ -41,7 +49,7 @@ const Pricing = () => {
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-3 gap-8 mb-16">
+          <div className="grid md:grid-cols-4 gap-6 mb-16">
             {pricingTiers.map((tier, index) => <Card key={tier.name} className={`relative ${tier.popular ? 'border-primary shadow-lg scale-105' : 'border-border'}`}>
                 {tier.popular && <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground">
                     Most Popular
