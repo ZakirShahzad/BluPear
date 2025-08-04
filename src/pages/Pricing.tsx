@@ -6,36 +6,28 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Star, Users, Zap } from "lucide-react";
 const Pricing = () => {
   const pricingTiers = [{
-    name: "Starter",
-    price: 0,
-    description: "For indie devs testing BluPear or securing a side project",
-    icon: <Zap className="h-6 w-6" />,
-    features: ["5 scans/month", "Secret detection", "Basic security score"],
-    buttonText: "Get Started Free",
-    popular: false
-  }, {
     name: "Solo Developer",
     price: 9.99,
     description: "For indie devs who want to stay secure across multiple projects",
     icon: <Star className="h-6 w-6" />,
-    features: ["25 scans/month", "Secret detection", "Security score"],
-    buttonText: "Start Trial",
+    features: ["25 scans/month", "Secret detection", "Security score", "7-day free trial"],
+    buttonText: "Start 7-Day Trial",
     popular: false
   }, {
     name: "Professional",
     price: 19.99,
     description: "For developers with more frequent scanning needs",
     icon: <Users className="h-6 w-6" />,
-    features: ["50 scans/month", "Secret detection", "Security score"],
-    buttonText: "Start Trial",
+    features: ["50 scans/month", "Secret detection", "Security score", "7-day free trial"],
+    buttonText: "Start 7-Day Trial",
     popular: true
   }, {
     name: "Startup",
     price: 29.99,
     description: "For teams that want ongoing visibility across repos",
     icon: <Users className="h-6 w-6" />,
-    features: ["100 scans/month", "Secret detection", "Security score"],
-    buttonText: "Start Trial",
+    features: ["100 scans/month", "Secret detection", "Security score", "7-day free trial"],
+    buttonText: "Start 7-Day Trial",
     popular: false
   }];
   return <PageTransition>
@@ -49,7 +41,7 @@ const Pricing = () => {
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-4 gap-6 mb-16">
+          <div className="grid md:grid-cols-3 gap-8 mb-16">
             {pricingTiers.map((tier, index) => <Card key={tier.name} className={`relative ${tier.popular ? 'border-primary shadow-lg scale-105' : 'border-border'}`}>
                 {tier.popular && <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground">
                     Most Popular
@@ -147,7 +139,7 @@ const Pricing = () => {
               <div className="text-left">
                 <h3 className="font-semibold mb-2">Is there a free trial?</h3>
                 <p className="text-muted-foreground text-sm">
-                  The Starter plan is free forever. Pro and Team plans include a 14-day free trial.
+                  All plans include a 7-day free trial. Payment information is required to start your trial.
                 </p>
               </div>
             </div>
