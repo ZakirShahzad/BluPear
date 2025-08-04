@@ -8,12 +8,21 @@ interface SubscriptionInfo {
   subscription_end?: string;
 }
 
+interface ScanUsageInfo {
+  current_scans: number;
+  scan_limit: number;
+  can_scan: boolean;
+  month_year: string;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   subscriptionInfo: SubscriptionInfo;
+  scanUsageInfo: ScanUsageInfo;
   refreshSubscription: () => Promise<void>;
+  refreshScanUsage: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -24,6 +33,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo>({ subscribed: false });
+  const [scanUsageInfo, setScanUsageInfo] = useState<ScanUsageInfo>({ 
+    current_scans: 0, 
+    scan_limit: 5, 
+    can_scan: true, 
+    month_year: new Date().toISOString().substring(0, 7) 
+  });
 
   const checkSubscription = async (userSession?: Session) => {
     const currentSession = userSession || session;
@@ -52,8 +67,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const checkScanUsage = async (userSession?: Session) => {
+    const currentSession = userSession || session;
+    if (!currentSession) {
+      setScanUsageInfo({ 
+        current_scans: 0, 
+        scan_limit: 5, 
+        can_scan: true, 
+        month_year: new Date().toISOString().substring(0, 7) 
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('check-scan-usage', {
+        headers: {
+          Authorization: `Bearer ${currentSession.access_token}`,
+        },
+      });
+
+      if (error) {
+        console.error('Error checking scan usage:', error);
+        return;
+      }
+
+      setScanUsageInfo(data);
+    } catch (error) {
+      console.error('Error checking scan usage:', error);
+    }
+  };
+
   const refreshSubscription = async () => {
     await checkSubscription();
+  };
+
+  const refreshScanUsage = async () => {
+    await checkScanUsage();
   };
 
   useEffect(() => {
@@ -64,11 +113,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Check subscription after auth state changes
+        // Check subscription and scan usage after auth state changes
         if (session) {
-          setTimeout(() => checkSubscription(session), 0);
+          setTimeout(() => {
+            checkSubscription(session);
+            checkScanUsage(session);
+          }, 0);
         } else {
           setSubscriptionInfo({ subscribed: false });
+          setScanUsageInfo({ 
+            current_scans: 0, 
+            scan_limit: 5, 
+            can_scan: true, 
+            month_year: new Date().toISOString().substring(0, 7) 
+          });
         }
       }
     );
@@ -96,7 +154,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     session,
     loading,
     subscriptionInfo,
+    scanUsageInfo,
     refreshSubscription,
+    refreshScanUsage,
     signOut,
   };
 

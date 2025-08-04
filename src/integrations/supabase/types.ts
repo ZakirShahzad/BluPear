@@ -155,6 +155,33 @@ export type Database = {
         }
         Relationships: []
       }
+      scan_usage: {
+        Row: {
+          created_at: string
+          id: string
+          month_year: string
+          scan_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month_year: string
+          scan_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month_year?: string
+          scan_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       security_audit_log: {
         Row: {
           action: string
@@ -239,6 +266,14 @@ export type Database = {
       cleanup_old_scan_cache: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_current_scan_count: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
+      increment_scan_count: {
+        Args: { p_user_id: string }
+        Returns: number
       }
       log_security_event: {
         Args: {

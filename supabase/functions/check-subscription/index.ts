@@ -49,17 +49,21 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
     if (customers.data.length === 0) {
-      logStep("No customer found, updating unsubscribed state");
+      logStep("No customer found, user is on free tier");
       await supabaseClient.from("subscribers").upsert({
         email: user.email,
         user_id: user.id,
         stripe_customer_id: null,
         subscribed: false,
-        subscription_tier: null,
+        subscription_tier: "Free",
         subscription_end: null,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'email' });
-      return new Response(JSON.stringify({ subscribed: false }), {
+      return new Response(JSON.stringify({ 
+        subscribed: false, 
+        subscription_tier: "Free",
+        subscription_end: null 
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
@@ -86,11 +90,9 @@ serve(async (req) => {
       const price = await stripe.prices.retrieve(priceId);
       const amount = price.unit_amount || 0;
       if (amount <= 999) {
-        subscriptionTier = "Solo Developer";
-      } else if (amount <= 1999) {
-        subscriptionTier = "Professional";
+        subscriptionTier = "Pro";
       } else {
-        subscriptionTier = "Startup";
+        subscriptionTier = "Team";
       }
       logStep("Determined subscription tier", { priceId, amount, subscriptionTier });
     } else {

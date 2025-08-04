@@ -17,35 +17,37 @@ const Pricing = () => {
 
   // Stripe Price IDs - replace these with your actual Stripe price IDs
   const stripePriceIds = {
-    "Solo Developer": "price_1QawJ3BlYgOVVgTc4ELKp46H", // $9.99/month
-    "Professional": "price_1QawJ3BlYgOVVgTc4ELKp47I",   // $19.99/month  
-    "Startup": "price_1QawJ3BlYgOVVgTc4ELKp48J"         // $29.99/month
+    "Pro": "price_1QawJ3BlYgOVVgTc4ELKp46H",    // $9.99/month
+    "Team": "price_1QawJ3BlYgOVVgTc4ELKp48J"    // $29.99/month
   };
 
   const pricingTiers = [{
-    name: "Solo Developer",
-    price: 9.99,
-    description: "For indie devs who want to stay secure across multiple projects",
+    name: "Free",
+    price: 0,
+    description: "Perfect for getting started with security scanning",
     icon: <Star className="h-6 w-6" />,
-    features: ["25 scans/month", "Secret detection", "Security score", "7-day free trial"],
-    buttonText: "Start 7-Day Trial",
-    popular: false
+    features: ["5 scans/month", "Basic security detection", "Security score", "Community support"],
+    buttonText: "Get Started Free",
+    popular: false,
+    isFree: true
   }, {
-    name: "Professional",
-    price: 19.99,
-    description: "For developers with more frequent scanning needs",
+    name: "Pro",
+    price: 9.99,
+    description: "For developers who need unlimited scanning",
     icon: <Users className="h-6 w-6" />,
-    features: ["50 scans/month", "Secret detection", "Security score", "7-day free trial"],
-    buttonText: "Start 7-Day Trial",
-    popular: true
+    features: ["Unlimited scans", "Advanced security detection", "Priority support", "Detailed reports"],
+    buttonText: "Upgrade to Pro",
+    popular: true,
+    isFree: false
   }, {
-    name: "Startup",
+    name: "Team",
     price: 29.99,
-    description: "For teams that want ongoing visibility across repos",
+    description: "For teams that want advanced collaboration features",
     icon: <Users className="h-6 w-6" />,
-    features: ["100 scans/month", "Secret detection", "Security score", "7-day free trial"],
-    buttonText: "Start 7-Day Trial",
-    popular: false
+    features: ["Unlimited scans", "Team collaboration", "Advanced analytics", "Premium support"],
+    buttonText: "Upgrade to Team",
+    popular: false,
+    isFree: false
   }];
 
   useEffect(() => {
@@ -67,6 +69,16 @@ const Pricing = () => {
   const handleSubscribe = async (tierName: string) => {
     if (!user) {
       navigate('/auth');
+      return;
+    }
+
+    // Handle free tier
+    if (tierName === "Free") {
+      toast({
+        title: "Welcome to the Free Plan!",
+        description: "You now have 5 free scans per month. Start scanning your repositories!",
+      });
+      navigate('/scanner');
       return;
     }
 
@@ -197,10 +209,16 @@ const Pricing = () => {
                     </div>
                   </div>
                   <CardTitle className="text-2xl font-bold">{tier.name}</CardTitle>
-                  <div className="flex items-baseline justify-center">
-                    <span className="text-4xl font-bold">${tier.price}</span>
-                    <span className="text-muted-foreground ml-1">/month</span>
-                  </div>
+                   <div className="flex items-baseline justify-center">
+                     {tier.price === 0 ? (
+                       <span className="text-4xl font-bold">Free</span>
+                     ) : (
+                       <>
+                         <span className="text-4xl font-bold">${tier.price}</span>
+                         <span className="text-muted-foreground ml-1">/month</span>
+                       </>
+                     )}
+                   </div>
                   <CardDescription className="text-center mt-2">
                     {tier.description}
                   </CardDescription>
@@ -230,37 +248,6 @@ const Pricing = () => {
             })}
           </div>
 
-          {/* Add-on Section */}
-          <div className="max-w-2xl mx-auto">
-            <Card className="border-border">
-              <CardHeader className="text-center">
-                <CardTitle className="text-xl font-bold">Extra Scans Pack</CardTitle>
-                <div className="flex items-baseline justify-center">
-                  <span className="text-2xl font-bold">+$5</span>
-                  <span className="text-muted-foreground ml-1">for 25 more scans/month</span>
-                </div>
-                <CardDescription>
-                  Need more scans? Add extra capacity to any paid plan
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <ul className="space-y-2">
-                  <li className="flex items-center">
-                    <Check className="h-4 w-4 text-primary mr-2" />
-                    <span className="text-sm">25 additional scans per month</span>
-                  </li>
-                  <li className="flex items-center">
-                    <Check className="h-4 w-4 text-primary mr-2" />
-                    <span className="text-sm">Works with Pro and Team plans</span>
-                  </li>
-                  <li className="flex items-center">
-                    <Check className="h-4 w-4 text-primary mr-2" />
-                    <span className="text-sm">Can purchase multiple packs</span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
 
           {/* FAQ Section */}
           <div className="text-center mt-16">
@@ -281,15 +268,15 @@ const Pricing = () => {
                 </p>
               </div>
               <div className="text-left">
-                <h3 className="font-semibold mb-2">What happens if I exceed my scan limit?</h3>
+                <h3 className="font-semibold mb-2">What happens if I exceed my free scan limit?</h3>
                 <p className="text-muted-foreground text-sm">
-                  You'll be prompted to upgrade or purchase additional scan packs to continue scanning.
+                  Free users get 5 scans per month. After that, you'll need to upgrade to a paid plan for unlimited scanning.
                 </p>
               </div>
               <div className="text-left">
-                <h3 className="font-semibold mb-2">Is there a free trial?</h3>
+                <h3 className="font-semibold mb-2">Do paid plans have scan limits?</h3>
                 <p className="text-muted-foreground text-sm">
-                  All plans include a 7-day free trial. Payment information is required to start your trial.
+                  No! Both Pro and Team plans include unlimited scans with no monthly restrictions.
                 </p>
               </div>
             </div>
