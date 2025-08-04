@@ -494,9 +494,8 @@ function calculateSecurityScore(results: ScanResult[]): SecurityScore {
   const configurations = calculateCategoryScore(typeCount.misconfiguration, 20);
   const patterns = calculateCategoryScore(typeCount.pattern, 15);
   
-  // Overall score uses weighted average of severity and count
-  const totalWeightedIssues = results.reduce((sum, result) => sum + severityWeights[result.severity], 0);
-  const overall = Math.max(10, 100 - (totalWeightedIssues * 0.8));
+  // Overall score is the average of all category scores
+  const overall = (secrets + vulnerabilities + configurations + patterns) / 4;
 
   return {
     overall: Math.round(overall),
