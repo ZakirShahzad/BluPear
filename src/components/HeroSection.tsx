@@ -137,7 +137,7 @@ export const HeroSection = () => {
           </div>
 
           {/* Trust Indicators */}
-          <div className="flex flex-wrap justify-center gap-8 pt-8">
+          <div className="flex flex-wrap justify-center gap-8 pt-6 pb-8">
             <div className="text-center">
               <div className="text-3xl font-bold text-primary">AI-Powered</div>
               <div className="text-sm text-muted-foreground">Advanced Analysis</div>
