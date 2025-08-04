@@ -14,9 +14,11 @@ import {
   Github,
   FileSearch,
   Key,
-  Bug
+  Bug,
+  Crown
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { InteractiveSecurityChart } from "./InteractiveSecurityChart";
 import { CodeDiffViewer } from "./CodeDiffViewer";
@@ -64,6 +66,7 @@ export const SecurityScanner = () => {
   const [securityScore, setSecurityScore] = useState<SecurityScore | null>(null);
   const [codeDiffs, setCodeDiffs] = useState<CodeDiff[]>([]);
   const { toast } = useToast();
+  const { user, subscriptionInfo, scanUsageInfo, refreshScanUsage } = useAuth();
 
   const mockScanResults: ScanResult[] = [
     {
@@ -128,6 +131,26 @@ export const SecurityScanner = () => {
       toast({
         title: "Repository URL Required",
         description: "Please enter a valid GitHub repository URL",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if user is authenticated
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to perform security scans",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check scan usage limits
+    if (scanUsageInfo && !scanUsageInfo.can_scan) {
+      toast({
+        title: "Scan Limit Reached",
+        description: `You've reached your monthly limit of ${scanUsageInfo.scan_limit} scans. Upgrade to Pro for 25 scans/month or Team for unlimited scans.`,
         variant: "destructive"
       });
       return;
@@ -220,6 +243,9 @@ export const SecurityScanner = () => {
         variant: "default"
       });
 
+      // Refresh scan usage after successful scan
+      await refreshScanUsage();
+
     } catch (error) {
       console.error('Scan error:', error);
       
@@ -266,6 +292,49 @@ export const SecurityScanner = () => {
 
   return (
     <div className="space-y-6">
+      {/* Scan Usage Display */}
+      {user && scanUsageInfo && (
+        <Card className="p-4 shadow-card border-border/50 bg-gradient-to-r from-primary/5 to-primary/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/20">
+                <Shield className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-medium text-foreground">
+                  Scan Usage ({subscriptionInfo?.subscription_tier || 'Trial Tier'})
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {scanUsageInfo.scan_limit === -1 
+                    ? `${scanUsageInfo.current_scans} scans this month (Unlimited)`
+                    : `${scanUsageInfo.current_scans} of ${scanUsageInfo.scan_limit} scans used this month`
+                  }
+                </p>
+              </div>
+            </div>
+            {!scanUsageInfo.can_scan && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.open('/pricing', '_blank')}
+                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+              >
+                <Crown className="h-4 w-4 mr-2" />
+                Upgrade Now
+              </Button>
+            )}
+          </div>
+          {scanUsageInfo.scan_limit !== -1 && (
+            <div className="mt-3">
+              <Progress 
+                value={(scanUsageInfo.current_scans / scanUsageInfo.scan_limit) * 100} 
+                className="h-2"
+              />
+            </div>
+          )}
+        </Card>
+      )}
+
       {/* Scanner Input */}
       <Card className="p-6 shadow-card border-border/50">
         <div className="space-y-4">
@@ -286,7 +355,7 @@ export const SecurityScanner = () => {
             </div>
             <Button 
               onClick={startScan}
-              disabled={isScanning}
+              disabled={isScanning || !user || (scanUsageInfo && !scanUsageInfo.can_scan)}
               variant="cyber"
               size="lg"
             >
