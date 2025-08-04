@@ -26,12 +26,12 @@ export const HeroSection = () => {
       learnMoreUrl: "https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure"
     },
     vulnerabilityAudit: {
-      title: "Vulnerability Assessment", 
-      description: "Comprehensive dependency scanning against the latest CVE database, ensuring your third-party packages don't introduce security risks.",
-      example: "lodash@4.17.10 (CVE-2019-10744)",
-      recommendation: "Regularly update dependencies and use tools like npm audit or GitHub Dependabot for automated monitoring.",
+      title: "Security Analysis", 
+      description: "AI-powered analysis of your code to identify potential security issues and vulnerabilities in your codebase.",
+      example: "Insecure authentication patterns detected",
+      recommendation: "Review identified security patterns and implement suggested fixes from our AI analysis.",
       severity: "warning" as const,
-      learnMoreUrl: "https://nvd.nist.gov/vuln"
+      learnMoreUrl: "https://owasp.org/www-project-top-ten/"
     },
     securityPatterns: {
       title: "Insecure Code Patterns",
@@ -101,7 +101,7 @@ export const HeroSection = () => {
             <EnhancedTooltip tip={securityTips.vulnerabilityAudit}>
               <div className="flex items-center gap-2 bg-card/50 border border-border/50 rounded-full px-4 py-2 cursor-help hover:scale-105 transition-transform">
                 <AlertTriangle className="h-4 w-4 text-warning" />
-                <span className="text-sm">Vulnerability Audit</span>
+                <span className="text-sm">Security Analysis</span>
               </div>
             </EnhancedTooltip>
             
@@ -134,32 +134,21 @@ export const HeroSection = () => {
                 <ArrowRight className="h-5 w-5 ml-2" />
               </Link>
             </Button>
-            <Button 
-              variant="outline" 
-              size="lg"
-              className="text-lg px-8 py-6 border-primary/30 hover:bg-primary/10"
-            >
-              View Demo
-            </Button>
           </div>
 
-          {/* Security Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8">
+          {/* Trust Indicators */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-8">
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary">10K+</div>
-              <div className="text-sm text-muted-foreground">Repositories Scanned</div>
+              <div className="text-3xl font-bold text-primary">AI-Powered</div>
+              <div className="text-sm text-muted-foreground">Advanced Analysis</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary">50K+</div>
-              <div className="text-sm text-muted-foreground">Secrets Detected</div>
+              <div className="text-3xl font-bold text-primary">Real-time</div>
+              <div className="text-sm text-muted-foreground">Instant Results</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary">99.9%</div>
-              <div className="text-sm text-muted-foreground">Accuracy Rate</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary">24/7</div>
-              <div className="text-sm text-muted-foreground">Monitoring</div>
+              <div className="text-3xl font-bold text-primary">Secure</div>
+              <div className="text-sm text-muted-foreground">Privacy-First</div>
             </div>
           </div>
         </div>

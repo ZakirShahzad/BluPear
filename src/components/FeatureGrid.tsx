@@ -19,8 +19,8 @@ const features = [
   },
   {
     icon: Bug,
-    title: "Vulnerability Scanning",
-    description: "Comprehensive dependency audit using npm audit, pip-audit, and other security databases.",
+    title: "Security Pattern Detection",
+    description: "AI-powered analysis to identify insecure coding patterns and potential security vulnerabilities.",
     gradient: "bg-gradient-alert"
   },
   {
@@ -49,14 +49,14 @@ const features = [
   },
   {
     icon: GitBranch,
-    title: "GitHub Integration",
-    description: "Native GitHub App integration for automated scanning on push, PR, and scheduled intervals.",
+    title: "GitHub Repository Scanning",
+    description: "Analyze any public GitHub repository by simply entering the repository URL.",
     gradient: "bg-gradient-primary"
   },
   {
     icon: Zap,
-    title: "Real-time Reports",
-    description: "Generate detailed markdown and PDF security reports with clear action items and timelines.",
+    title: "Instant Security Reports",
+    description: "Get detailed security analysis reports with clear findings and actionable recommendations.",
     gradient: "bg-gradient-alert"
   }
 ];

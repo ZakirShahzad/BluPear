@@ -45,8 +45,8 @@ export const Header = () => {
                         <p className="text-sm text-muted-foreground">Find exposed API keys and credentials</p>
                       </div>
                       <div className="space-y-1">
-                        <h4 className="text-sm font-medium">Vulnerability Audit</h4>
-                        <p className="text-sm text-muted-foreground">Scan dependencies for known issues</p>
+                        <h4 className="text-sm font-medium">Security Analysis</h4>
+                        <p className="text-sm text-muted-foreground">AI-powered code security scanning</p>
                       </div>
                       <div className="space-y-1">
                         <h4 className="text-sm font-medium">Code Analysis</h4>
