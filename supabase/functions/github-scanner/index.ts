@@ -267,53 +267,65 @@ async function analyzeCodeWithAI(content: string, filename: string, fileType: st
   }
 
   try {
-    const prompt = `You are a senior cybersecurity expert with extensive experience in application security, penetration testing, and secure coding practices. Analyze the following source code for security vulnerabilities with exceptional detail and precision.
+    const prompt = `You are a senior cybersecurity expert specializing in comprehensive vulnerability assessment and code security analysis. Analyze the following source code for security vulnerabilities with exceptional detail and precision.
 
-TASK: Perform a comprehensive security analysis of the ${fileType} file and return ONLY a valid JSON array with detailed findings.
+TASK: Perform a comprehensive security analysis of the ${fileType} file and return ONLY a valid JSON array with detailed findings that include SPECIFIC CODE EXAMPLES for fixes.
 
-ANALYSIS FRAMEWORK:
+ENHANCED ANALYSIS FRAMEWORK:
 1. SECRETS & CREDENTIALS: Hardcoded API keys, passwords, tokens, certificates, database credentials, encryption keys
-2. INJECTION VULNERABILITIES: SQL injection, NoSQL injection, LDAP injection, OS command injection, code injection
+2. INJECTION VULNERABILITIES: SQL injection, NoSQL injection, LDAP injection, OS command injection, code injection, XSS
 3. AUTHENTICATION & AUTHORIZATION: Broken authentication, session management flaws, privilege escalation, insecure direct object references
 4. CRYPTOGRAPHIC ISSUES: Weak algorithms, improper key management, insecure random number generation, weak hashing
-5. INPUT VALIDATION: XSS, CSRF, path traversal, file upload vulnerabilities, deserialization attacks
+5. INPUT VALIDATION: XSS, CSRF, path traversal, file upload vulnerabilities, deserialization attacks, buffer overflows
 6. CONFIGURATION SECURITY: Debug modes, verbose error messages, insecure defaults, missing security headers
-7. BUSINESS LOGIC FLAWS: Race conditions, workflow bypasses, insufficient rate limiting
+7. BUSINESS LOGIC FLAWS: Race conditions, workflow bypasses, insufficient rate limiting, timing attacks
 8. INFORMATION DISCLOSURE: Sensitive data exposure, error message leakage, logging sensitive information
+9. DEPENDENCY VULNERABILITIES: Outdated packages, known CVEs, supply chain risks
+10. INFRASTRUCTURE SECURITY: Container misconfigurations, cloud security issues, deployment vulnerabilities
 
-SEVERITY CLASSIFICATION:
-- CRITICAL: Immediate exploit risk, data breach potential, system compromise (RCE, exposed secrets, auth bypass)
-- HIGH: Serious security impact, user data at risk (XSS, SQL injection, privilege escalation)  
-- MEDIUM: Security weakness, potential for exploitation (weak crypto, CSRF, info disclosure)
-- LOW: Security best practice violation, hardening opportunity (deprecated functions, weak configs)
+SEVERITY CLASSIFICATION (Enhanced):
+- CRITICAL: Immediate exploit risk, data breach potential, system compromise (RCE, exposed secrets, auth bypass, complete system takeover)
+- HIGH: Serious security impact, user data at risk (XSS, SQL injection, privilege escalation, sensitive data exposure)  
+- MEDIUM: Security weakness, potential for exploitation (weak crypto, CSRF, info disclosure, improper validation)
+- LOW: Security best practice violation, hardening opportunity (deprecated functions, weak configs, missing headers)
 
 FILE: ${filename}
 CONTENT:
 \`\`\`${fileType}
-${content.slice(0, 12000)}
+${content.slice(0, 15000)}
 \`\`\`
 
-For each security issue identified, provide:
+For each security issue identified, provide ENHANCED OUTPUT with SPECIFIC CODE EXAMPLES:
 {
-  "type": "secret|vulnerability|misconfiguration|pattern",
+  "type": "secret|vulnerability|misconfiguration|pattern|dependency",
   "severity": "critical|high|medium|low",
   "title": "Specific, technical issue title",
-  "description": "Comprehensive explanation including: 1) What the vulnerability is, 2) Why it's dangerous, 3) How it could be exploited, 4) What data/systems are at risk, 5) Real-world attack scenarios",
+  "description": "Comprehensive explanation including: 1) What the vulnerability is, 2) Why it's dangerous, 3) How it could be exploited, 4) What data/systems are at risk, 5) Real-world attack scenarios, 6) CVSS score estimation",
   "line": line_number_if_identifiable,
+  "vulnerableCode": "EXACT vulnerable code snippet from the file",
+  "fixedCode": "COMPLETE secure replacement code with proper implementation",
   "remediation": "Detailed step-by-step fix instructions including: 1) Immediate mitigation steps, 2) Proper implementation example, 3) Additional security considerations, 4) Testing/verification steps, 5) Prevention strategies for future development",
-  "impact": "Detailed explanation of potential business and technical impact",
+  "impact": "Detailed explanation of potential business and technical impact including data at risk and compliance implications",
+  "exploitability": "high|medium|low - how easily this could be exploited",
+  "businessRisk": "critical|high|medium|low - business impact assessment",
   "cwe_reference": "Common Weakness Enumeration ID if applicable (e.g., CWE-79, CWE-89)",
-  "owasp_category": "OWASP Top 10 category if applicable (e.g., A03:2021 - Injection)"
+  "owasp_category": "OWASP Top 10 category if applicable (e.g., A03:2021 - Injection)",
+  "compliance_impact": ["GDPR", "HIPAA", "PCI-DSS", "SOX"] - applicable compliance frameworks
 }
 
-REQUIREMENTS:
-- Provide exhaustive technical analysis for each finding
-- Include specific code examples in remediation advice
-- Explain attack vectors and exploitation techniques
-- Consider both immediate and long-term security implications
-- Reference industry standards (OWASP, CWE, NIST) where applicable
+CRITICAL REQUIREMENTS:
+- Provide EXACT vulnerable code snippets from the actual file content
+- Include COMPLETE, production-ready secure replacement code
+- Explain WHY each fix addresses the security issue
+- Consider code context and dependencies when suggesting fixes
+- Include error handling and validation in fixed code examples
+- Reference specific line numbers where possible
+- Provide realistic attack scenarios with technical details
+- Consider both immediate fixes and architectural improvements
 - If no issues found, return empty array []
-- Return ONLY valid JSON, no explanations or markdown outside the JSON structure`;
+- Return ONLY valid JSON, no explanations or markdown outside the JSON structure
+
+FOCUS ON: Real, exploitable vulnerabilities with concrete evidence from the code, not theoretical issues.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

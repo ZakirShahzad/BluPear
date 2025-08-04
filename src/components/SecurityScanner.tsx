@@ -28,7 +28,7 @@ import { EnhancedTooltip } from "./EnhancedTooltip";
 
 interface ScanResult {
   id: string;
-  type: 'secret' | 'vulnerability' | 'misconfiguration' | 'pattern';
+  type: 'secret' | 'vulnerability' | 'misconfiguration' | 'pattern' | 'dependency';
   severity: 'critical' | 'high' | 'medium' | 'low';
   title: string;
   description: string;
@@ -37,6 +37,12 @@ interface ScanResult {
   suggestion?: string;
   vulnerableCode?: string;
   fixedCode?: string;
+  impact?: string;
+  exploitability?: 'high' | 'medium' | 'low';
+  businessRisk?: 'critical' | 'high' | 'medium' | 'low';
+  cwe_reference?: string;
+  owasp_category?: string;
+  compliance_impact?: string[];
 }
 
 interface SecurityScore {
@@ -66,6 +72,10 @@ export const SecurityScanner = () => {
   const [results, setResults] = useState<ScanResult[]>([]);
   const [securityScore, setSecurityScore] = useState<SecurityScore | null>(null);
   const [codeDiffs, setCodeDiffs] = useState<CodeDiff[]>([]);
+  const [platform, setPlatform] = useState<string>('github');
+  const [riskAssessment, setRiskAssessment] = useState<any>(null);
+  const [generatedFixes, setGeneratedFixes] = useState<any[]>([]);
+  const [showFixGenerator, setShowFixGenerator] = useState(false);
   const { toast } = useToast();
   const { user, subscriptionInfo, scanUsageInfo, refreshScanUsage } = useAuth();
 
@@ -162,16 +172,27 @@ export const SecurityScanner = () => {
       return;
     }
 
-    // Validate GitHub URL format
-    const githubUrlPattern = /^https:\/\/github\.com\/[^\/]+\/[^\/]+/;
-    if (!githubUrlPattern.test(repoUrl.trim())) {
+    // Validate repository URL format for multiple platforms
+    const urlPatterns = {
+      github: /^https:\/\/github\.com\/[^\/]+\/[^\/]+/,
+      gitlab: /^https:\/\/gitlab\.com\/[^\/]+\/[^\/]+/,
+      bitbucket: /^https:\/\/bitbucket\.org\/[^\/]+\/[^\/]+/
+    };
+    
+    const detectedPlatform = Object.entries(urlPatterns).find(([, pattern]) => 
+      pattern.test(repoUrl.trim())
+    )?.[0];
+    
+    if (!detectedPlatform) {
       toast({
         title: "Invalid URL Format",
-        description: "Please enter a valid GitHub repository URL (e.g., https://github.com/owner/repo)",
+        description: "Please enter a valid repository URL from GitHub, GitLab, or Bitbucket",
         variant: "destructive"
       });
       return;
     }
+    
+    setPlatform(detectedPlatform);
 
     setIsScanning(true);
     setScanProgress(0);
@@ -190,8 +211,8 @@ export const SecurityScanner = () => {
     ];
 
     try {
-      // Start the actual scan
-      const { data, error } = await supabase.functions.invoke('github-scanner', {
+      // Use universal scanner for multi-platform support
+      const { data, error } = await supabase.functions.invoke('git-universal-scanner', {
         body: { repoUrl: repoUrl.trim() }
       });
 
@@ -217,6 +238,29 @@ export const SecurityScanner = () => {
 
       setResults(data.results || []);
       setSecurityScore(data.securityScore || mockSecurityScore);
+      
+      // Generate enhanced risk assessment
+      if (data.results?.length > 0) {
+        try {
+          const repositoryName = repoUrl.split('/').slice(-2).join('/');
+          const riskAnalysis = await supabase.functions.invoke('ai-risk-analyzer', {
+            body: {
+              results: data.results,
+              repositoryContext: {
+                name: repositoryName,
+                platform: detectedPlatform,
+                size: data.results.length > 10 ? 'large' : data.results.length > 5 ? 'medium' : 'small'
+              }
+            }
+          });
+          
+          if (riskAnalysis.data?.success) {
+            setRiskAssessment(riskAnalysis.data.assessment);
+          }
+        } catch (riskError) {
+          console.error('Risk analysis error:', riskError);
+        }
+      }
       
       // Save scan report to database
       const { data: { user } } = await supabase.auth.getUser();
@@ -352,7 +396,7 @@ export const SecurityScanner = () => {
           <div className="flex gap-3">
             <div className="flex-1">
               <Input
-                placeholder="https://github.com/username/repository"
+                placeholder="https://github.com/owner/repo or https://gitlab.com/owner/repo"
                 value={repoUrl}
                 onChange={(e) => setRepoUrl(e.target.value)}
                 disabled={isScanning}
@@ -389,6 +433,147 @@ export const SecurityScanner = () => {
 
       {/* Security Score Chart */}
       {securityScore && <InteractiveSecurityChart score={securityScore} />}
+      
+      {/* Enhanced Risk Assessment */}
+      {riskAssessment && (
+        <Card className="p-6 shadow-card border-border/50">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              AI Risk Assessment
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-gradient-to-r from-destructive/10 to-destructive/5 rounded-lg border border-destructive/20">
+                <div className="text-sm text-muted-foreground">Business Impact</div>
+                <div className={`text-lg font-bold ${
+                  riskAssessment.businessImpact === 'critical' ? 'text-destructive' :
+                  riskAssessment.businessImpact === 'high' ? 'text-warning' :
+                  riskAssessment.businessImpact === 'medium' ? 'text-warning/70' : 'text-success'
+                }`}>
+                  {riskAssessment.businessImpact.toUpperCase()}
+                </div>
+              </div>
+              
+              <div className="p-4 bg-gradient-to-r from-warning/10 to-warning/5 rounded-lg border border-warning/20">
+                <div className="text-sm text-muted-foreground">Exploitability</div>
+                <div className="text-lg font-bold text-warning">
+                  {riskAssessment.exploitability}/10
+                </div>
+              </div>
+              
+              <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+                <div className="text-sm text-muted-foreground">Overall Risk</div>
+                <div className="text-lg font-bold text-primary">
+                  {riskAssessment.overallRisk}/10
+                </div>
+              </div>
+            </div>
+
+            {riskAssessment.dataAtRisk?.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-foreground mb-2">Data at Risk</h4>
+                <div className="flex flex-wrap gap-2">
+                  {riskAssessment.dataAtRisk.map((data: string, idx: number) => (
+                    <Badge key={idx} variant="destructive" className="text-xs">
+                      {data}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {riskAssessment.complianceImpact?.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-foreground mb-2">Compliance Impact</h4>
+                <div className="flex flex-wrap gap-2">
+                  {riskAssessment.complianceImpact.map((standard: string, idx: number) => (
+                    <Badge key={idx} variant="secondary" className="text-xs">
+                      {standard}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {riskAssessment.recommendations?.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-foreground mb-3">AI Recommendations</h4>
+                <div className="space-y-2">
+                  {riskAssessment.recommendations.map((rec: string, idx: number) => (
+                    <div key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <span className="text-primary font-medium">{idx + 1}.</span>
+                      <span>{rec}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+      
+      {/* AI Fix Generator */}
+      {results.length > 0 && (results.filter(r => r.severity === 'critical' || r.severity === 'high').length > 0) && (
+        <Card className="p-6 shadow-card border-border/50">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Key className="h-5 w-5 text-primary" />
+                AI-Powered Security Fixes
+              </h3>
+              <Button 
+                onClick={async () => {
+                  try {
+                    const fixGeneration = await supabase.functions.invoke('generate-security-fixes', {
+                      body: {
+                        results: results.filter(r => r.severity === 'critical' || r.severity === 'high'),
+                        repositoryUrl: repoUrl,
+                        platform,
+                        owner: repoUrl.split('/')[3],
+                        repo: repoUrl.split('/')[4],
+                        createPullRequest: false
+                      }
+                    });
+                    
+                    if (fixGeneration.data?.success) {
+                      setGeneratedFixes(fixGeneration.data.fixes);
+                      setShowFixGenerator(true);
+                      
+                      // Convert fixes to CodeDiff format for CodeDiffViewer
+                      const diffs = fixGeneration.data.fixes.map((fix: any) => ({
+                        id: fix.issueId,
+                        title: fix.title,
+                        description: fix.description,
+                        severity: results.find(r => r.id === fix.issueId)?.severity || 'medium',
+                        file: fix.file,
+                        before: fix.originalCode,
+                        after: fix.fixedCode,
+                        language: fix.file.split('.').pop() || 'text',
+                        suggestion: fix.explanation
+                      }));
+                      setCodeDiffs(diffs);
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Fix Generation Failed", 
+                      description: "Unable to generate automated fixes at this time",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+                variant="cyber"
+              >
+                Generate AI Fixes
+              </Button>
+            </div>
+            
+            <p className="text-muted-foreground text-sm">
+              Generate intelligent security fixes with before/after code examples for critical and high severity issues.
+            </p>
+          </div>
+        </Card>
+      )}
       
       {/* Code Diff Viewer */}
       {codeDiffs.length > 0 && <CodeDiffViewer diffs={codeDiffs} />}

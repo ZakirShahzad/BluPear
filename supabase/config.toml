@@ -2,3 +2,12 @@ project_id = "rcpzrkikgelpmqzdzxww"
 
 [functions.github-scanner]
 verify_jwt = false
+
+[functions.git-universal-scanner]
+verify_jwt = false
+
+[functions.ai-risk-analyzer]
+verify_jwt = false
+
+[functions.generate-security-fixes]
+verify_jwt = false
