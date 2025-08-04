@@ -170,10 +170,7 @@ const Pricing = () => {
                   <Badge variant="secondary" className="bg-primary/20 text-primary">
                     Current Plan: {subscriptionInfo.subscription_tier}
                   </Badge>
-                  <Button onClick={handleManageSubscription} variant="outline" size="sm" className="ml-2">
-                    <Settings className="h-4 w-4 mr-1" />
-                    Manage
-                  </Button>
+                  
                 </div>
                 {subscriptionInfo.subscription_end && <p className="text-sm text-muted-foreground mt-2">
                     Next billing: {new Date(subscriptionInfo.subscription_end).toLocaleDateString()}
