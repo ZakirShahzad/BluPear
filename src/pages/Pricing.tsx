@@ -24,10 +24,12 @@ const Pricing = () => {
   const [loading, setLoading] = useState<string | null>(null);
 
   // Stripe Price IDs - replace these with your actual Stripe price IDs
+  // Stripe Price IDs - UPDATE THESE WITH YOUR ACTUAL STRIPE PRICE IDs
+  // For testing: Create test products in Stripe Dashboard > Products
+  // Copy the price IDs (starting with price_) from your test products
   const stripePriceIds = {
-    "Pro": "price_1QawJ3BlYgOVVgTc4ELKp46H",
-    // $9.99/month
-    "Team": "price_1QawJ3BlYgOVVgTc4ELKp48J" // $29.99/month
+    "Pro": "price_1234567890test_pro", // Replace with your test Pro price ID
+    "Team": "price_1234567890test_team" // Replace with your test Team price ID
   };
   const pricingTiers = [{
     name: "Trial Tier",
