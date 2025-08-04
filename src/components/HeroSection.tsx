@@ -1,20 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Shield, 
-  Github, 
-  Zap, 
-  Eye, 
-  Lock,
-  AlertTriangle,
-  CheckCircle2,
-  ArrowRight,
-  Search
-} from "lucide-react";
+import { Shield, Github, Zap, Eye, Lock, AlertTriangle, CheckCircle2, ArrowRight, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SecurityShield3D } from "./SecurityShield3D";
 import { EnhancedTooltip } from "./EnhancedTooltip";
-
 export const HeroSection = () => {
   const securityTips = {
     secretDetection: {
@@ -26,7 +15,7 @@ export const HeroSection = () => {
       learnMoreUrl: "https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure"
     },
     vulnerabilityAudit: {
-      title: "Security Analysis", 
+      title: "Security Analysis",
       description: "AI-powered analysis of your code to identify potential security issues and vulnerabilities in your codebase.",
       example: "Insecure authentication patterns detected",
       recommendation: "Review identified security patterns and implement suggested fixes from our AI analysis.",
@@ -49,18 +38,10 @@ export const HeroSection = () => {
       severity: "info" as const
     }
   };
-
-  return (
-    <div className="relative overflow-hidden">
+  return <div className="relative overflow-hidden">
       {/* Background Video */}
       <div className="absolute inset-0 w-full h-full">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover opacity-20"
-        >
+        <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-20">
           <source src="/hero-video.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-gradient-security" />
@@ -80,9 +61,7 @@ export const HeroSection = () => {
             <h1 className="text-5xl md:text-7xl font-bold bg-gradient-primary bg-clip-text text-transparent">
               BluPear
             </h1>
-            <h2 className="text-2xl md:text-4xl font-semibold text-foreground">
-              Secure Your Code, Protect Your Future
-            </h2>
+            <h2 className="text-2xl md:text-4xl font-semibold text-foreground">Ship Products, Not Secrets</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               Advanced GitHub repository security scanner that detects exposed secrets, 
               vulnerabilities, and misconfigurations before they become threats.
@@ -122,12 +101,7 @@ export const HeroSection = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              asChild
-              variant="cyber" 
-              size="lg"
-              className="text-lg px-8 py-6"
-            >
+            <Button asChild variant="cyber" size="lg" className="text-lg px-8 py-6">
               <Link to="/scanner">
                 <Github className="h-5 w-5 mr-2" />
                 Scan Repository
@@ -154,6 +128,5 @@ export const HeroSection = () => {
         </div>
       </div>
 
-    </div>
-  );
+    </div>;
 };
