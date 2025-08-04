@@ -17,6 +17,7 @@ import {
   Bug,
   Crown
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -139,9 +140,14 @@ export const SecurityScanner = () => {
     // Check if user is authenticated
     if (!user) {
       toast({
-        title: "Authentication Required",
-        description: "Please sign in to perform security scans",
-        variant: "destructive"
+        title: "Sign In Required",
+        description: "Please sign in or create an account to scan repositories.",
+        variant: "destructive",
+        action: (
+          <Button asChild variant="outline" size="sm">
+            <Link to="/auth">Sign In</Link>
+          </Button>
+        ),
       });
       return;
     }
