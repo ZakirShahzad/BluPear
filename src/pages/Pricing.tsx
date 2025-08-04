@@ -10,17 +10,24 @@ import { Check, Star, Users, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 const Pricing = () => {
-  const { user, session, subscriptionInfo, refreshSubscription } = useAuth();
-  const { toast } = useToast();
+  const {
+    user,
+    session,
+    subscriptionInfo,
+    refreshSubscription
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
 
   // Stripe Price IDs - replace these with your actual Stripe price IDs
   const stripePriceIds = {
-    "Pro": "price_1QawJ3BlYgOVVgTc4ELKp46H",    // $9.99/month
-    "Team": "price_1QawJ3BlYgOVVgTc4ELKp48J"    // $29.99/month
+    "Pro": "price_1QawJ3BlYgOVVgTc4ELKp46H",
+    // $9.99/month
+    "Team": "price_1QawJ3BlYgOVVgTc4ELKp48J" // $29.99/month
   };
-
   const pricingTiers = [{
     name: "Trial Tier",
     price: 0,
@@ -49,23 +56,21 @@ const Pricing = () => {
     popular: false,
     isFree: false
   }];
-
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('success') === 'true') {
       toast({
         title: "Welcome to your free trial!",
-        description: "Your subscription is now active. Enjoy your 7-day free trial!",
+        description: "Your subscription is now active. Enjoy your 7-day free trial!"
       });
       refreshSubscription();
     } else if (urlParams.get('canceled') === 'true') {
       toast({
         title: "Payment canceled",
-        description: "No worries! Your payment was canceled.",
+        description: "No worries! Your payment was canceled."
       });
     }
   }, []);
-
   const handleSubscribe = async (tierName: string) => {
     if (!user) {
       navigate('/auth');
@@ -76,40 +81,41 @@ const Pricing = () => {
     if (tierName === "Trial Tier") {
       toast({
         title: "Welcome to the Trial Tier!",
-        description: "You now have 5 free scans per month. Start scanning your repositories!",
+        description: "You now have 5 free scans per month. Start scanning your repositories!"
       });
       navigate('/scanner');
       return;
     }
-
     if (!session) {
       toast({
         title: "Authentication required",
         description: "Please sign in to subscribe.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     const priceId = stripePriceIds[tierName as keyof typeof stripePriceIds];
     if (!priceId) {
       toast({
         title: "Error",
         description: "Price not found for this plan.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     setLoading(tierName);
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('create-checkout', {
+        body: {
+          priceId
         },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
-
       if (error) throw error;
 
       // Open Stripe checkout in a new tab
@@ -119,23 +125,23 @@ const Pricing = () => {
       toast({
         title: "Error",
         description: "Failed to create checkout session. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(null);
     }
   };
-
   const handleManageSubscription = async () => {
     if (!session) return;
-
     try {
-      const { data, error } = await supabase.functions.invoke('customer-portal', {
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('customer-portal', {
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
-
       if (error) throw error;
 
       // Open customer portal in a new tab
@@ -143,13 +149,12 @@ const Pricing = () => {
     } catch (error) {
       console.error('Error opening customer portal:', error);
       toast({
-        title: "Error", 
+        title: "Error",
         description: "Failed to open subscription management. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   return <PageTransition>
       <div className="min-h-screen bg-background">
         <Header />
@@ -160,47 +165,33 @@ const Pricing = () => {
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Choose the plan that fits your development workflow.</p>
             
             {/* Subscription Status */}
-            {subscriptionInfo.subscribed && (
-              <div className="mt-6 p-4 bg-primary/10 border border-primary/20 rounded-lg max-w-md mx-auto">
+            {subscriptionInfo.subscribed && <div className="mt-6 p-4 bg-primary/10 border border-primary/20 rounded-lg max-w-md mx-auto">
                 <div className="flex items-center justify-center gap-2">
                   <Badge variant="secondary" className="bg-primary/20 text-primary">
                     Current Plan: {subscriptionInfo.subscription_tier}
                   </Badge>
-                  <Button
-                    onClick={handleManageSubscription}
-                    variant="outline"
-                    size="sm"
-                    className="ml-2"
-                  >
+                  <Button onClick={handleManageSubscription} variant="outline" size="sm" className="ml-2">
                     <Settings className="h-4 w-4 mr-1" />
                     Manage
                   </Button>
                 </div>
-                {subscriptionInfo.subscription_end && (
-                  <p className="text-sm text-muted-foreground mt-2">
+                {subscriptionInfo.subscription_end && <p className="text-sm text-muted-foreground mt-2">
                     Next billing: {new Date(subscriptionInfo.subscription_end).toLocaleDateString()}
-                  </p>
-                )}
-              </div>
-            )}
+                  </p>}
+              </div>}
           </div>
 
           {/* Pricing Cards */}
           <div className="grid md:grid-cols-3 gap-8 mb-16">
             {pricingTiers.map((tier, index) => {
-              const isCurrentPlan = subscriptionInfo.subscribed && subscriptionInfo.subscription_tier === tier.name;
-              return (
-                <Card key={tier.name} className={`relative ${tier.popular || isCurrentPlan ? 'border-primary shadow-lg scale-105' : 'border-border'}`}>
-                  {tier.popular && !isCurrentPlan && (
-                    <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground">
+            const isCurrentPlan = subscriptionInfo.subscribed && subscriptionInfo.subscription_tier === tier.name;
+            return <Card key={tier.name} className={`relative ${tier.popular || isCurrentPlan ? 'border-primary shadow-lg scale-105' : 'border-border'}`}>
+                  {tier.popular && !isCurrentPlan && <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground">
                       Most Popular
-                    </Badge>
-                  )}
-                  {isCurrentPlan && (
-                    <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-600 text-white">
+                    </Badge>}
+                  {isCurrentPlan && <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-600 text-white">
                       Your Plan
-                    </Badge>
-                  )}
+                    </Badge>}
                 
                 <CardHeader className="text-center pb-4">
                   <div className="flex justify-center mb-4">
@@ -210,14 +201,11 @@ const Pricing = () => {
                   </div>
                   <CardTitle className="text-2xl font-bold">{tier.name}</CardTitle>
                    <div className="flex items-baseline justify-center">
-                     {tier.price === 0 ? (
-                       <span className="text-4xl font-bold">Trial</span>
-                     ) : (
-                       <>
+                     {tier.price === 0 ? <span className="text-4xl font-bold">Free
+                  </span> : <>
                          <span className="text-4xl font-bold">${tier.price}</span>
                          <span className="text-muted-foreground ml-1">/month</span>
-                       </>
-                     )}
+                       </>}
                    </div>
                   <CardDescription className="text-center mt-2">
                     {tier.description}
@@ -234,18 +222,12 @@ const Pricing = () => {
                 </CardContent>
 
                   <CardFooter>
-                    <Button 
-                      className="w-full" 
-                      variant={isCurrentPlan ? "secondary" : (tier.popular ? "default" : "outline")}
-                      onClick={() => handleSubscribe(tier.name)}
-                      disabled={loading === tier.name || isCurrentPlan}
-                    >
+                    <Button className="w-full" variant={isCurrentPlan ? "secondary" : tier.popular ? "default" : "outline"} onClick={() => handleSubscribe(tier.name)} disabled={loading === tier.name || isCurrentPlan}>
                       {loading === tier.name ? "Processing..." : isCurrentPlan ? "Current Plan" : tier.buttonText}
                     </Button>
                   </CardFooter>
-                </Card>
-              );
-            })}
+                </Card>;
+          })}
           </div>
 
 
