@@ -156,22 +156,23 @@ const Pricing = () => {
       });
     }
   };
-
   const handleCancelSubscription = async () => {
     if (!session) return;
     try {
-      const { data, error } = await supabase.functions.invoke('cancel-subscription', {
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('cancel-subscription', {
         headers: {
           Authorization: `Bearer ${session.access_token}`
         }
       });
       if (error) throw error;
-
       toast({
         title: "Subscription Canceled",
         description: data.message || "Your subscription has been canceled. You'll retain access until the end of your billing period."
       });
-      
+
       // Refresh subscription status
       refreshSubscription();
     } catch (error) {
@@ -204,10 +205,7 @@ const Pricing = () => {
                     Next billing: {new Date(subscriptionInfo.subscription_end).toLocaleDateString()}
                   </p>}
                 <div className="flex gap-2 mt-4 justify-center">
-                  <Button variant="outline" size="sm" onClick={handleManageSubscription}>
-                    <Settings className="h-4 w-4 mr-2" />
-                    Manage Subscription
-                  </Button>
+                  
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="destructive" size="sm">
