@@ -4,85 +4,48 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Star, Users, Zap } from "lucide-react";
-
 const Pricing = () => {
-  const pricingTiers = [
-    {
-      name: "Starter",
-      price: 0,
-      description: "For indie devs testing BluPear or securing a side project",
-      icon: <Zap className="h-6 w-6" />,
-      features: [
-        "5 scans/month",
-        "Public GitHub repos only",
-        "Secret detection (API keys, tokens, .env files)",
-        "Basic security score",
-        "Manual scan only"
-      ],
-      buttonText: "Get Started Free",
-      popular: false
-    },
-    {
-      name: "Solo Developer",
-      price: 9,
-      description: "For indie devs who want to stay secure across multiple projects",
-      icon: <Star className="h-6 w-6" />,
-      features: [
-        "25 scans/month",
-        "Private repo support",
-        "Secret detection + config missteps (debug flags, Firebase)",
-        "Downloadable scan report (PDF/Markdown)",
-        "GPT-powered risk explanation (up to 3 per scan)",
-        "GitHub PR auto-scan (optional)"
-      ],
-      buttonText: "Start Pro Trial",
-      popular: true
-    },
-    {
-      name: "Startup",
-      price: 29,
-      description: "For lean teams that want ongoing visibility across repos",
-      icon: <Users className="h-6 w-6" />,
-      features: [
-        "100 scans/month (shared across team)",
-        "Up to 3 team members",
-        "GitHub App auto-scan on push/PR",
-        "Email alerts for high-severity issues",
-        "GPT-powered suggestions (up to 10 per scan)",
-        "Scan logs & score tracking"
-      ],
-      buttonText: "Start Team Trial",
-      popular: false
-    }
-  ];
-
-  return (
-    <PageTransition>
+  const pricingTiers = [{
+    name: "Starter",
+    price: 0,
+    description: "For indie devs testing BluPear or securing a side project",
+    icon: <Zap className="h-6 w-6" />,
+    features: ["5 scans/month", "Public GitHub repos only", "Secret detection (API keys, tokens, .env files)", "Basic security score", "Manual scan only"],
+    buttonText: "Get Started Free",
+    popular: false
+  }, {
+    name: "Solo Developer",
+    price: 9,
+    description: "For indie devs who want to stay secure across multiple projects",
+    icon: <Star className="h-6 w-6" />,
+    features: ["25 scans/month", "Private repo support", "Secret detection + config missteps (debug flags, Firebase)", "Downloadable scan report (PDF/Markdown)", "GPT-powered risk explanation (up to 3 per scan)", "GitHub PR auto-scan (optional)"],
+    buttonText: "Start Pro Trial",
+    popular: true
+  }, {
+    name: "Startup",
+    price: 29,
+    description: "For lean teams that want ongoing visibility across repos",
+    icon: <Users className="h-6 w-6" />,
+    features: ["100 scans/month (shared across team)", "Up to 3 team members", "GitHub App auto-scan on push/PR", "Email alerts for high-severity issues", "GPT-powered suggestions (up to 10 per scan)", "Scan logs & score tracking"],
+    buttonText: "Start Team Trial",
+    popular: false
+  }];
+  return <PageTransition>
       <div className="min-h-screen bg-background">
         <Header />
         <div className="container mx-auto px-4 py-16">
           {/* Header Section */}
           <div className="text-center mb-16">
-            <h1 className="text-5xl font-bold text-foreground mb-6">
-              Simple, Transparent Pricing
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Secure your code with our scan-first, lean approach. Choose the plan that fits your development workflow.
-            </p>
+            <h1 className="text-5xl font-bold text-foreground mb-6">Pricing</h1>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Choose the plan that fits your development workflow.</p>
           </div>
 
           {/* Pricing Cards */}
           <div className="grid md:grid-cols-3 gap-8 mb-16">
-            {pricingTiers.map((tier, index) => (
-              <Card 
-                key={tier.name} 
-                className={`relative ${tier.popular ? 'border-primary shadow-lg scale-105' : 'border-border'}`}
-              >
-                {tier.popular && (
-                  <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground">
+            {pricingTiers.map((tier, index) => <Card key={tier.name} className={`relative ${tier.popular ? 'border-primary shadow-lg scale-105' : 'border-border'}`}>
+                {tier.popular && <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground">
                     Most Popular
-                  </Badge>
-                )}
+                  </Badge>}
                 
                 <CardHeader className="text-center pb-4">
                   <div className="flex justify-center mb-4">
@@ -102,25 +65,19 @@ const Pricing = () => {
 
                 <CardContent className="pt-4">
                   <ul className="space-y-3">
-                    {tier.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-start">
+                    {tier.features.map((feature, featureIndex) => <li key={featureIndex} className="flex items-start">
                         <Check className="h-5 w-5 text-primary mr-3 mt-0.5 flex-shrink-0" />
                         <span className="text-sm">{feature}</span>
-                      </li>
-                    ))}
+                      </li>)}
                   </ul>
                 </CardContent>
 
                 <CardFooter>
-                  <Button 
-                    className="w-full" 
-                    variant={tier.popular ? "default" : "outline"}
-                  >
+                  <Button className="w-full" variant={tier.popular ? "default" : "outline"}>
                     {tier.buttonText}
                   </Button>
                 </CardFooter>
-              </Card>
-            ))}
+              </Card>)}
           </div>
 
           {/* Add-on Section */}
@@ -189,8 +146,6 @@ const Pricing = () => {
           </div>
         </div>
       </div>
-    </PageTransition>
-  );
+    </PageTransition>;
 };
-
 export default Pricing;
