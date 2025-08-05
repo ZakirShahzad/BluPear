@@ -62,10 +62,7 @@ export const HeroSection = () => {
               BluPear
             </h1>
             <h2 className="text-2xl md:text-4xl font-semibold text-foreground">Ship Products, Not Secrets</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Advanced GitHub repository security scanner that detects exposed secrets, 
-              vulnerabilities, and misconfigurations before they become threats.
-            </p>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">Advanced Git repository security scanner that detects exposed secrets, vulnerabilities, and misconfigurations before they become threats.</p>
           </div>
 
           {/* Feature Pills with Enhanced Tooltips */}
