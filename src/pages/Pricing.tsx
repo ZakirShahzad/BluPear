@@ -63,8 +63,8 @@ const Pricing = () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('success') === 'true') {
       toast({
-        title: "Welcome to your free trial!",
-        description: "Your subscription is now active. Enjoy your 7-day free trial!"
+        title: "Subscription active",
+        description: "Your subscription is now active. Thanks for subscribing!"
       });
       refreshSubscription();
     } else if (urlParams.get('canceled') === 'true') {
