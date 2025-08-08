@@ -28,8 +28,8 @@ const Pricing = () => {
   // For testing: Create test products in Stripe Dashboard > Products
   // Copy the price IDs (starting with price_) from your test products
   const stripePriceIds = {
-    "Pro": "price_1234567890test_pro", // Replace with your test Pro price ID
-    "Team": "price_1234567890test_team" // Replace with your test Team price ID
+    "Pro": "price_1RtrqvF2vohfGBT7XrCJ6Ikr",
+    "Team": "price_1Rtrs4F2vohfGBT7i4Q9RAUU"
   };
   const pricingTiers = [{
     name: "Trial Tier",
