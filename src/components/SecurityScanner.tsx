@@ -153,22 +153,39 @@ export const SecurityScanner = () => {
       return;
     }
 
-    // Validate repository URL format for multiple platforms
+    // Normalize and validate repository URL for multiple platforms
+    let normalizedUrl = repoUrl.trim();
+    
+    // Remove .git suffix if present
+    if (normalizedUrl.endsWith('.git')) {
+      normalizedUrl = normalizedUrl.slice(0, -4);
+    }
+    
+    // Add https:// if no protocol specified
+    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+      normalizedUrl = `https://${normalizedUrl}`;
+    }
+    
+    // Validate URL format for supported platforms
     const urlPatterns = {
-      github: /^https:\/\/github\.com\/[^\/]+\/[^\/]+/,
-      gitlab: /^https:\/\/gitlab\.com\/[^\/]+\/[^\/]+/,
-      bitbucket: /^https:\/\/bitbucket\.org\/[^\/]+\/[^\/]+/
+      github: /^https?:\/\/(www\.)?github\.com\/[^\/]+\/[^\/]+/,
+      gitlab: /^https?:\/\/(www\.)?gitlab\.com\/[^\/]+\/[^\/]+/,
+      bitbucket: /^https?:\/\/(www\.)?bitbucket\.org\/[^\/]+\/[^\/]+/
     };
-    const detectedPlatform = Object.entries(urlPatterns).find(([, pattern]) => pattern.test(repoUrl.trim()))?.[0];
+    
+    const detectedPlatform = Object.entries(urlPatterns).find(([, pattern]) => pattern.test(normalizedUrl))?.[0];
+    
     if (!detectedPlatform) {
       toast({
-        title: "Invalid URL Format",
-        description: "Please enter a valid repository URL from GitHub, GitLab, or Bitbucket",
+        title: "Invalid Repository URL",
+        description: "Please enter a valid repository URL (e.g., github.com/owner/repo or https://gitlab.com/owner/repo)",
         variant: "destructive"
       });
       return;
     }
+    
     setPlatform(detectedPlatform);
+    setRepoUrl(normalizedUrl); // Update with normalized URL
     setIsScanning(true);
     setScanProgress(0);
     setResults([]);
@@ -204,7 +221,7 @@ export const SecurityScanner = () => {
         error
       } = await supabase.functions.invoke('git-universal-scanner', {
         body: {
-          repoUrl: repoUrl.trim()
+          repoUrl: normalizedUrl
         }
       });
 
@@ -231,7 +248,7 @@ export const SecurityScanner = () => {
       // Generate enhanced risk assessment
       if (data.results?.length > 0) {
         try {
-          const repositoryName = repoUrl.split('/').slice(-2).join('/');
+          const repositoryName = normalizedUrl.split('/').slice(-2).join('/');
           const riskAnalysis = await supabase.functions.invoke('ai-risk-analyzer', {
             body: {
               results: data.results,
@@ -257,7 +274,7 @@ export const SecurityScanner = () => {
         }
       } = await supabase.auth.getUser();
       if (user) {
-        const repositoryName = repoUrl.split('/').slice(-2).join('/');
+        const repositoryName = normalizedUrl.split('/').slice(-2).join('/');
         const scanResults = data.results || [];
         const totalIssues = scanResults.length;
         const criticalIssues = scanResults.filter((r: any) => r.severity === 'critical').length;
@@ -266,7 +283,7 @@ export const SecurityScanner = () => {
         const lowIssues = scanResults.filter((r: any) => r.severity === 'low').length;
         await supabase.from('scan_reports').insert({
           user_id: user.id,
-          repository_url: repoUrl.trim(),
+          repository_url: normalizedUrl,
           repository_name: repositoryName,
           security_score: data.securityScore?.overall || mockSecurityScore.overall,
           total_issues: totalIssues,
