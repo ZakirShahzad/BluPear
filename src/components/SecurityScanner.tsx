@@ -215,23 +215,26 @@ export const SecurityScanner = () => {
       message: "Generating security report..."
     }];
     try {
-      // Use universal scanner for multi-platform support
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke('git-universal-scanner', {
+      // Update progress during scan
+      const progressInterval = setInterval(() => {
+        setScanProgress(prev => {
+          const newProgress = Math.min(prev + 3, 95);
+          return newProgress;
+        });
+      }, 2000);
+
+      // Use universal scanner for multi-platform support with timeout
+      const scanPromise = supabase.functions.invoke('git-universal-scanner', {
         body: {
           repoUrl: normalizedUrl
         }
       });
 
-      // Update progress during scan
-      const progressInterval = setInterval(() => {
-        setScanProgress(prev => {
-          const newProgress = Math.min(prev + 5, 95);
-          return newProgress;
-        });
-      }, 1000);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Scan timeout - please try again')), 180000) // 3 minute timeout
+      );
+
+      const { data, error } = await Promise.race([scanPromise, timeoutPromise]) as any;
 
       // Clear interval when scan completes
       clearInterval(progressInterval);
