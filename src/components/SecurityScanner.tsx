@@ -284,7 +284,7 @@ export const SecurityScanner = () => {
         const highIssues = scanResults.filter((r: any) => r.severity === 'high').length;
         const mediumIssues = scanResults.filter((r: any) => r.severity === 'medium').length;
         const lowIssues = scanResults.filter((r: any) => r.severity === 'low').length;
-        await supabase.from('scan_reports').insert({
+        const { error: insertError } = await supabase.from('scan_reports').insert({
           user_id: user.id,
           repository_url: normalizedUrl,
           repository_name: repositoryName,
@@ -294,8 +294,17 @@ export const SecurityScanner = () => {
           high_issues: highIssues,
           medium_issues: mediumIssues,
           low_issues: lowIssues,
-          scan_results: scanResults
+          scan_results: {
+            findings: scanResults,
+            risk_assessment: riskAssessment || null,
+            files_scanned: data.filesScanned || 0,
+            scan_date: new Date().toISOString()
+          }
         });
+        
+        if (insertError) {
+          console.error('Error saving scan report:', insertError);
+        }
       }
       toast({
         title: "Scan Complete",
