@@ -224,26 +224,35 @@ export const SecurityScanner = () => {
       }, 2000);
 
       // Use universal scanner for multi-platform support with timeout
-      const scanPromise = supabase.functions.invoke('git-universal-scanner', {
-        body: {
-          repoUrl: normalizedUrl
-        }
-      });
-
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Scan timeout - please try again')), 180000) // 3 minute timeout
+        setTimeout(() => reject(new Error('Scan timeout after 3 minutes. Repository may be too large or private. Please try again or use a smaller repository.')), 180000)
       );
 
-      const { data, error } = await Promise.race([scanPromise, timeoutPromise]) as any;
+      const scanResult = await Promise.race([
+        supabase.functions.invoke('git-universal-scanner', {
+          body: { repoUrl: normalizedUrl }
+        }),
+        timeoutPromise
+      ]) as any;
 
       // Clear interval when scan completes
       clearInterval(progressInterval);
       setScanProgress(100);
-      if (error) {
-        throw new Error(error.message || 'Scan failed');
+
+      // Handle edge function errors
+      if (scanResult.error) {
+        const errorMsg = scanResult.error.message || 'Failed to connect to scanner service';
+        throw new Error(errorMsg);
       }
-      if (!data.success) {
-        throw new Error(data.error || 'Scan failed');
+
+      const { data, error } = scanResult;
+
+      if (error) {
+        throw new Error(error.message || 'Scanner returned an error');
+      }
+      
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'Scan failed to complete successfully');
       }
       setResults(data.results || []);
       setSecurityScore(data.securityScore || mockSecurityScore);
@@ -314,15 +323,16 @@ export const SecurityScanner = () => {
 
       // Refresh scan usage after successful scan
       await refreshScanUsage();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Scan error:', error);
-
-      // Fallback to mock data on error
-      setResults(mockScanResults);
-      setSecurityScore(mockSecurityScore);
+      
+      // Clear results and show error - don't use mock data
+      setResults([]);
+      setSecurityScore(null);
+      
       toast({
-        title: "Scan Error",
-        description: error.message || "Failed to scan repository. Using sample data.",
+        title: "Scan Failed",
+        description: error.message || "Unable to scan repository. Please check the URL and try again.",
         variant: "destructive"
       });
     } finally {

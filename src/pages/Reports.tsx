@@ -267,11 +267,99 @@ const Reports = () => {
                                       </CardContent>
                                     </Card>
 
+                                    {/* Scan Metadata */}
+                                    <Card>
+                                      <CardHeader>
+                                        <CardTitle>Scan Information</CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                          <div>
+                                            <span className="text-muted-foreground">Files Scanned:</span>
+                                            <span className="ml-2 font-semibold">{selectedReport.scan_results?.files_scanned || 'N/A'}</span>
+                                          </div>
+                                          <div>
+                                            <span className="text-muted-foreground">Scan Date:</span>
+                                            <span className="ml-2 font-semibold">
+                                              {selectedReport.scan_results?.scan_date 
+                                                ? format(new Date(selectedReport.scan_results.scan_date), 'MMM d, yyyy h:mm a')
+                                                : format(new Date(selectedReport.created_at), 'MMM d, yyyy h:mm a')}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+
+                                    {/* Risk Assessment */}
+                                    {selectedReport.scan_results?.risk_assessment && (
+                                      <Card>
+                                        <CardHeader>
+                                          <CardTitle>Risk Assessment</CardTitle>
+                                          <CardDescription>AI-powered business impact analysis</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                          <div>
+                                            <h5 className="font-semibold mb-2">Overall Risk Level</h5>
+                                            <Badge variant={
+                                              selectedReport.scan_results.risk_assessment.overallRisk === 'critical' ? 'destructive' :
+                                              selectedReport.scan_results.risk_assessment.overallRisk === 'high' ? 'destructive' :
+                                              selectedReport.scan_results.risk_assessment.overallRisk === 'medium' ? 'secondary' : 'outline'
+                                            } className="text-base">
+                                              {selectedReport.scan_results.risk_assessment.overallRisk?.toUpperCase()}
+                                            </Badge>
+                                          </div>
+                                          
+                                          {selectedReport.scan_results.risk_assessment.businessImpact && (
+                                            <div>
+                                              <h5 className="font-semibold mb-2">Business Impact</h5>
+                                              <div className="bg-muted/50 p-4 rounded-lg">
+                                                <p className="text-sm">{selectedReport.scan_results.risk_assessment.businessImpact}</p>
+                                              </div>
+                                            </div>
+                                          )}
+                                          
+                                          {selectedReport.scan_results.risk_assessment.exploitability && (
+                                            <div>
+                                              <h5 className="font-semibold mb-2">Exploitability</h5>
+                                              <div className="bg-destructive/10 p-4 rounded-lg">
+                                                <p className="text-sm">{selectedReport.scan_results.risk_assessment.exploitability}</p>
+                                              </div>
+                                            </div>
+                                          )}
+
+                                          {selectedReport.scan_results.risk_assessment.dataAtRisk?.length > 0 && (
+                                            <div>
+                                              <h5 className="font-semibold mb-2">Data at Risk</h5>
+                                              <div className="flex flex-wrap gap-2">
+                                                {selectedReport.scan_results.risk_assessment.dataAtRisk.map((data: string, idx: number) => (
+                                                  <Badge key={idx} variant="outline">{data}</Badge>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+
+                                          {selectedReport.scan_results.risk_assessment.recommendations?.length > 0 && (
+                                            <div>
+                                              <h5 className="font-semibold mb-2">Recommendations</h5>
+                                              <ul className="space-y-2">
+                                                {selectedReport.scan_results.risk_assessment.recommendations.map((rec: string, idx: number) => (
+                                                  <li key={idx} className="text-sm flex items-start gap-2">
+                                                    <span className="text-primary">•</span>
+                                                    <span>{rec}</span>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          )}
+                                        </CardContent>
+                                      </Card>
+                                    )}
+
                                     <Card>
                                       <CardHeader>
                                         <CardTitle>Detailed Security Findings</CardTitle>
                                         <CardDescription>
-                                          Comprehensive analysis with remediation guidance
+                                          Comprehensive vulnerability analysis with remediation guidance
                                         </CardDescription>
                                       </CardHeader>
                                       <CardContent>
@@ -279,7 +367,7 @@ const Reports = () => {
                                           {selectedReport.scan_results?.findings?.map((finding: any, index: number) => (
                                             <div key={index} className="border rounded-lg p-6 space-y-4">
                                               <div className="flex items-start justify-between">
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-3 flex-wrap">
                                                   <Badge variant={
                                                     finding.severity === 'critical' ? 'destructive' :
                                                     finding.severity === 'high' ? 'destructive' :
@@ -288,8 +376,18 @@ const Reports = () => {
                                                     {finding.severity?.toUpperCase()}
                                                   </Badge>
                                                   <Badge variant="outline">{finding.type}</Badge>
+                                                  {finding.exploitability && (
+                                                    <Badge variant="outline" className="text-xs">
+                                                      Exploitability: {finding.exploitability}
+                                                    </Badge>
+                                                  )}
+                                                  {finding.businessRisk && (
+                                                    <Badge variant="outline" className="text-xs">
+                                                      Business Risk: {finding.businessRisk}
+                                                    </Badge>
+                                                  )}
                                                 </div>
-                                                <div className="text-right text-xs text-muted-foreground">
+                                                <div className="text-right text-xs text-muted-foreground space-y-1">
                                                   {finding.cwe_reference && <div>CWE: {finding.cwe_reference}</div>}
                                                   {finding.owasp_category && <div>{finding.owasp_category}</div>}
                                                 </div>
@@ -328,6 +426,24 @@ const Reports = () => {
                                                   </div>
                                                 )}
 
+                                                {finding.vulnerableCode && (
+                                                  <div>
+                                                    <h5 className="font-semibold mb-2">Vulnerable Code</h5>
+                                                    <pre className="bg-destructive/10 border border-destructive/20 p-4 rounded-lg overflow-x-auto">
+                                                      <code className="text-sm">{finding.vulnerableCode}</code>
+                                                    </pre>
+                                                  </div>
+                                                )}
+
+                                                {finding.fixedCode && (
+                                                  <div>
+                                                    <h5 className="font-semibold mb-2">Fixed Code</h5>
+                                                    <pre className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4 rounded-lg overflow-x-auto">
+                                                      <code className="text-sm">{finding.fixedCode}</code>
+                                                    </pre>
+                                                  </div>
+                                                )}
+
                                                 {(finding.suggestion || finding.remediation) && (
                                                   <div>
                                                     <h5 className="font-semibold mb-2 flex items-center gap-2">
@@ -341,12 +457,23 @@ const Reports = () => {
                                                     </div>
                                                   </div>
                                                 )}
+
+                                                {finding.compliance_impact?.length > 0 && (
+                                                  <div>
+                                                    <h5 className="font-semibold mb-2">Compliance Impact</h5>
+                                                    <div className="flex flex-wrap gap-2">
+                                                      {finding.compliance_impact.map((compliance: string, idx: number) => (
+                                                        <Badge key={idx} variant="outline">{compliance}</Badge>
+                                                      ))}
+                                                    </div>
+                                                  </div>
+                                                )}
                                               </div>
                                             </div>
                                           )) || (
                                             <div className="text-center py-8">
                                               <Shield className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                                              <p className="text-muted-foreground">No detailed findings available for this report.</p>
+                                              <p className="text-muted-foreground">No security findings - repository appears secure!</p>
                                             </div>
                                           )}
                                         </div>
